@@ -1,0 +1,37 @@
+---
+/**
+ * 404 page (served automatically by Netlify / Vercel for unknown addresses).
+ * One page for all languages: the message is shown in Arabic, French and English,
+ * each with a link to its home page.
+ */
+import Layout from '../layouts/Layout.astro';
+import Logo from '../components/Logo.astro';
+import { site } from '../config/product';
+import { translations, activeLangs, localePath } from '../lib/i18n';
+---
+
+<Layout title={`404 — ${site.brand}`} noindex>
+  <main class="container-page grid min-h-svh place-items-center py-12">
+    <div class="w-full max-w-xl rounded-3xl bg-white p-6 text-center shadow-soft sm:p-10">
+      <a href="/" class="pressable mx-auto inline-block rounded-lg p-1" aria-label={site.brand}><Logo /></a>
+      <p class="mt-6 text-6xl font-extrabold text-accent tabular-nums" aria-hidden="true">404</p>
+      <ul class="mt-6 flex flex-col divide-y divide-line">
+        {
+          activeLangs.map((l, i) => {
+            const t = translations[l];
+            const Heading = i === 0 ? 'h1' : 'h2'; // one h1 per page
+            return (
+              <li lang={l} dir={t.meta.dir} class="py-5">
+                <Heading class="text-xl font-extrabold text-brand">{t.notFound.title}</Heading>
+                <p class="mt-1 text-muted">{t.notFound.text}</p>
+                <a href={localePath(l, '/')} class="pressable mt-3 inline-flex min-h-11 items-center rounded-2xl bg-accent px-5 font-bold text-white hover:bg-brand">
+                  {t.notFound.back}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </div>
+  </main>
+</Layout>

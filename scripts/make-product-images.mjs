@@ -1,7 +1,7 @@
 /**
  * Builds the site product images from the original photos (one photo per color).
  *   Source:  src/assets/products/originals/{black,beige,brown}.png
- *   Output:  src/assets/products/{color}-1.webp  full product (square, centered)
+ *   Output:  src/assets/products/{color}-1.webp  full product (4:3, centered, soft shadow)
  *            src/assets/products/{color}-2.webp  close-up: buckle
  *            src/assets/products/{color}-3.webp  close-up: front of the shoe
  * Run again after replacing a photo:  npm run images
@@ -42,21 +42,27 @@ for (const color of COLORS) {
   const src = await cleanBackground(`${IN}/${color}.png`);
   const { width, height } = await sharp(src).metadata();
 
-  // 1 — full product: remove the white margins, then center it on a white square
+  // 1 — full product, landscape 4:3 (fits the wide hero card on phones; letterboxed in white
+  //     in square cards, which is invisible on the white cards). A soft shadow is drawn under the shoe.
   const trimmed = await sharp(src).trim({ background: '#ffffff', threshold: 2 }).toBuffer();
   const t = await sharp(trimmed).metadata();
-  const side = Math.round(Math.max(t.width, t.height) * 1.04);
-  const square = await sharp(trimmed)
-    .extend({
-      top: Math.floor((side - t.height) / 2),
-      bottom: Math.ceil((side - t.height) / 2),
-      left: Math.floor((side - t.width) / 2),
-      right: Math.ceil((side - t.width) / 2),
-      background: WHITE,
-    })
+  const W = Math.round(Math.max(t.width * 1.06, ((t.height * 1.1) * 4) / 3));
+  const H = Math.round((W * 3) / 4);
+  const left = Math.floor((W - t.width) / 2);
+  const top = Math.floor((H - t.height) / 2);
+  const shadow = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+      <filter id="b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${Math.round(t.height * 0.035)}"/></filter>
+      <ellipse cx="${W / 2}" cy="${top + t.height * 0.93}" rx="${t.width * 0.38}" ry="${t.height * 0.055}"
+        fill="#3b2a1e" fill-opacity="0.22" filter="url(#b)"/>
+    </svg>`,
+  );
+  const canvas = await sharp(trimmed)
+    .extend({ top, bottom: H - t.height - top, left, right: W - t.width - left, background: WHITE })
     .toBuffer(); // sharp resizes before extending, so the padding is done in a separate step
-  await sharp(square)
-    .resize(SIZE, SIZE)
+  await sharp(canvas)
+    .composite([{ input: shadow, blend: 'multiply' }])
+    .resize(SIZE, Math.round((SIZE * 3) / 4))
     .webp({ quality: 88 })
     .toFile(`${OUT}/${color}-1.webp`);
 

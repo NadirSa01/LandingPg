@@ -133,6 +133,9 @@ const en: Translation = {
     maxPairs: '{n} pairs maximum',
   },
 
+  /* ---------- 404 page ---------- */
+  notFound: { title: 'Page not found', text: 'The link may be wrong or the page was removed.', back: 'Back to home page' },
+
   /* ---------- Thank-you page ---------- */
   thanks: {
     title: 'Thank you! We received your order',

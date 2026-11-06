@@ -77,11 +77,11 @@ await icon(180, 'public/apple-touch-icon.png', 0); // iOS rounds the corners its
 
 // Social share image (1200x630): logo on the left, product drawing on the right
 const logo = await sharp(`${OUT}/logo-full-dark.png`).resize({ height: 340 }).toBuffer();
-const sandal = await sharp('src/assets/products/brown-1.webp').resize(560, 560).toBuffer();
+const sandal = await sharp('src/assets/products/brown-1.webp').resize({ width: 560 }).toBuffer(); // 560x420
 await sharp({ create: { width: 1200, height: 630, channels: 3, background: '#f3ece2' } })
   .composite([
     { input: logo, top: 145, left: 90 },
-    { input: sandal, top: 35, left: 600 },
+    { input: sandal, top: 105, left: 600 },
   ])
   .jpeg({ quality: 85 })
   .toFile('public/og-image.jpg');

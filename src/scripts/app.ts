@@ -322,25 +322,58 @@ observe('#hero-cta', (visible) => {
 
 // Small phones: the hero "Order now" button can land at the very bottom of the screen, right where
 // the floating WhatsApp button is. While it does, the WhatsApp button hides (it comes back on scroll).
+// IntersectionObserver whose area is only the bottom strip of the screen (no layout reads on scroll).
 {
   const cta = document.getElementById('hero-cta');
-  const WA_ZONE = 96; // px from the bottom of the screen covered by the WhatsApp button
-  let queued = false;
-  const check = () => {
-    queued = false;
-    if (!cta) return;
-    const r = cta.getBoundingClientRect();
-    (Alpine.store('ui') as { heroCtaUnderWhatsApp: boolean }).heroCtaUnderWhatsApp =
-      r.bottom > innerHeight - WA_ZONE && r.top < innerHeight;
+  const WA_ZONE = 80; // px from the bottom covered by the WhatsApp button (16px gap + 56px button + margin)
+  let io: IntersectionObserver | undefined;
+  const watch = () => {
+    io?.disconnect();
+    if (!cta || !('IntersectionObserver' in window)) return;
+    io = new IntersectionObserver(
+      ([e]) => {
+        (Alpine.store('ui') as { heroCtaUnderWhatsApp: boolean }).heroCtaUnderWhatsApp = e.isIntersecting;
+      },
+      { rootMargin: `-${Math.max(0, innerHeight - WA_ZONE)}px 0px 0px 0px` },
+    );
+    io.observe(cta);
   };
-  const queue = () => {
-    if (!queued) (queued = true), requestAnimationFrame(check);
-  };
-  if (cta) {
-    addEventListener('scroll', queue, { passive: true });
-    addEventListener('resize', queue);
-    check();
+  watch();
+  let resizeTimer: number | undefined;
+  addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(watch, 200);
+  });
+}
+
+// In-page links ("Order now" → #order, footer links, back to top): scroll without putting
+// "#order" in the address. Otherwise refreshing the page jumps straight back to the form.
+document.addEventListener('click', (e) => {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+  if (!a || !a.getAttribute('href')?.includes('#')) return;
+  const url = new URL(a.href);
+  if (url.origin !== location.origin || url.pathname !== location.pathname) return;
+  const id = decodeURIComponent(url.hash.slice(1));
+  const target = id ? document.getElementById(id) : null;
+  if (id && !target) return;
+  e.preventDefault();
+  if (!target) {
+    scrollTo({ top: 0 }); // "#" = back to top (smooth via CSS, instant with reduced motion)
+    return;
   }
+  target.scrollIntoView({ block: 'start' });
+  // Keyboard / screen-reader users continue from the section they jumped to
+  if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+  target.focus({ preventScroll: true });
+});
+
+// Arrived with a #section in the address (e.g. from the thank-you page footer): the browser has
+// jumped there; remove it from the address so a refresh doesn't jump again.
+if (location.hash) {
+  const clean = () => history.replaceState(history.state, '', location.pathname + location.search);
+  if (document.readyState === 'complete') setTimeout(clean, 0);
+  else addEventListener('load', () => setTimeout(clean, 0), { once: true });
 }
 
 // Pixel ViewContent when the gallery or the offer is seen (once)

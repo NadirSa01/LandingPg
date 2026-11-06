@@ -1,0 +1,5 @@
+# Search engines may index the landing pages, not the thank-you pages.
+User-agent: *
+Disallow: /merci
+Disallow: /fr/merci
+Disallow: /en/merci

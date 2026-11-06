@@ -13,8 +13,10 @@ const trustIcons = [Banknote, Truck, RefreshCw];
 ---
 
 <section id="hero" class="container-page grid items-center gap-4 lg:items-center pt-3 pb-10 sm:gap-6 sm:pt-8 lg:grid-cols-2 lg:gap-12 lg:py-16">
-  <!-- Image (on top on mobile) -->
-  <div class="relative aspect-square max-h-[32svh] w-full self-center overflow-hidden rounded-3xl bg-white shadow-soft [@media(max-height:700px)]:max-h-[25svh] sm:max-h-[42svh] lg:max-h-none">
+  <!-- Image (on top on mobile).
+       Phones/tablets: fixed height (the card is wider than tall). Desktop: square.
+       Note: no aspect-ratio + max-height combo here, Safari (iPhone) sizes the photo wrong with it. -->
+  <div class="relative h-[32svh] w-full self-center overflow-hidden rounded-3xl bg-white shadow-soft [@media(max-height:700px)]:h-[25svh] sm:h-[42svh] lg:aspect-square lg:h-auto">
     <ProductImages priority sizes="(min-width: 1280px) 600px, (min-width: 1024px) 50vw, 100vw" />
   </div>
 
