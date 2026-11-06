@@ -1,0 +1,50 @@
+---
+/** Hero: image of the selected color, headline, price, color swatches, CTA, trust points */
+import Banknote from '@lucide/astro/icons/banknote';
+import Truck from '@lucide/astro/icons/truck';
+import RefreshCw from '@lucide/astro/icons/refresh-cw';
+import { useT } from '../lib/i18n';
+import PriceTag from './PriceTag.astro';
+import ColorSwatches from './ColorSwatches.astro';
+import ProductImages from './ProductImages.astro';
+
+const { t } = useT(Astro.url);
+const trustIcons = [Banknote, Truck, RefreshCw];
+---
+
+<section id="hero" class="container-page grid items-center gap-4 lg:items-center pt-3 pb-10 sm:gap-6 sm:pt-8 lg:grid-cols-2 lg:gap-12 lg:py-16">
+  <!-- Image (on top on mobile) -->
+  <div class="relative aspect-square max-h-[32svh] w-full self-center overflow-hidden rounded-3xl bg-white shadow-soft [@media(max-height:700px)]:max-h-[25svh] sm:max-h-[42svh] lg:max-h-none">
+    <ProductImages priority sizes="(min-width: 1280px) 600px, (min-width: 1024px) 50vw, 100vw" />
+  </div>
+
+  <!-- Text -->
+  <div class="flex flex-col gap-3 sm:gap-5">
+    <!-- .hero-in + --i = entrance wave (see global.css). The image is not animated. -->
+    <div class="hero-in" style="--i: 0">
+      <p class="mb-1 text-sm font-bold text-cork-dark sm:text-base">{t.productName}</p>
+      <h1 class="text-[clamp(1.75rem,6vw,3rem)] leading-[1.2] font-extrabold text-brand">{t.headline}</h1>
+      <p class="mt-1 text-lg text-muted sm:mt-2 sm:text-xl">{t.subheadline}</p>
+    </div>
+
+    <div class="hero-in" style="--i: 1"><PriceTag /></div>
+
+    <div class="hero-in" style="--i: 2"><ColorSwatches /></div>
+
+    <a id="hero-cta" href="#order" style="--i: 3" class="hero-in btn-primary w-full sm:w-auto sm:min-w-72 sm:self-start">{t.orderNow}</a>
+
+    <ul style="--i: 4" class="hero-in grid grid-cols-3 gap-2 text-center text-sm font-bold text-brand sm:text-base">
+      {
+        t.trust.map((label, i) => {
+          const Icon = trustIcons[i] ?? Banknote;
+          return (
+            <li class="flex flex-col items-center gap-1 rounded-2xl bg-sand px-2 py-3">
+              <Icon class="size-6 text-accent" aria-hidden="true" />
+              <span class="leading-tight">{label}</span>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</section>

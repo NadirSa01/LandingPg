@@ -1,0 +1,33 @@
+---
+/**
+ * Floating WhatsApp button with a pre-filled message — visible on the whole site.
+ * Mobile/tablet: bottom corner; moves up above the sticky order bar while that bar
+ * is shown, so it never covers it. Desktop: bottom corner.
+ * Over the order form it shrinks (scale 0.7, toward the corner) to stay out of the way.
+ * Small phones: hidden while the hero "Order now" button sits under it (back as soon as you scroll).
+ */
+import { whatsappLink } from '../lib/whatsapp';
+import WhatsAppIcon from './WhatsAppIcon.astro';
+import { useT } from '../lib/i18n';
+
+const { t } = useT(Astro.url);
+---
+
+<a
+  href={whatsappLink(t.whatsappMessage)}
+  target="_blank"
+  rel="noopener"
+  aria-label={t.whatsappAria}
+  x-data
+  :class="{
+    'max-lg:-translate-y-[4.75rem]': $store.ui && !$store.ui.formVisible && !$store.ui.heroCtaVisible,
+    'scale-70': $store.ui && $store.ui.formVisible,
+    'max-lg:opacity-0 max-lg:scale-80 max-lg:pointer-events-none': $store.ui && $store.ui.heroCtaUnderWhatsApp,
+  }"
+  :aria-hidden="$store.ui && $store.ui.heroCtaUnderWhatsApp ? 'true' : null"
+  :tabindex="$store.ui && $store.ui.heroCtaUnderWhatsApp ? '-1' : null"
+  class="pressable fixed end-4 ltr:origin-bottom-right rtl:origin-bottom-left bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40 grid size-14 place-items-center rounded-full bg-whatsapp text-white shadow-soft hover:bg-whatsapp-dark lg:bottom-6"
+  style="transition: translate 250ms var(--ease-out), scale 200ms var(--ease-out), opacity 200ms var(--ease-out), transform 160ms var(--ease-out), background-color 150ms ease;"
+>
+  <WhatsAppIcon class="size-8" />
+</a>

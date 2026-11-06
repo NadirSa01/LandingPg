@@ -1,0 +1,38 @@
+---
+/**
+ * STRADA logo (files generated from the source logo by `npm run logo`).
+ *  - variant "horizontal": S + STRADA side by side (header)
+ *  - variant "stacked":    S above STRADA (footer)
+ *  - tone "dark" for light backgrounds, "light" for dark backgrounds
+ */
+import { Image } from 'astro:assets';
+import { site } from '../config/product';
+import markDark from '../assets/brand/logo-mark-dark.png';
+import markLight from '../assets/brand/logo-mark-light.png';
+import wordDark from '../assets/brand/logo-word-dark.png';
+import wordLight from '../assets/brand/logo-word-light.png';
+import fullDark from '../assets/brand/logo-full-dark.png';
+import fullLight from '../assets/brand/logo-full-light.png';
+
+interface Props {
+  variant?: 'horizontal' | 'stacked';
+  tone?: 'dark' | 'light';
+  class?: string;
+}
+const { variant = 'horizontal', tone = 'dark', class: className = '' } = Astro.props;
+const mark = tone === 'dark' ? markDark : markLight;
+const word = tone === 'dark' ? wordDark : wordLight;
+const full = tone === 'dark' ? fullDark : fullLight;
+---
+
+{
+  variant === 'horizontal' ? (
+    // dir="ltr": the logo always reads S → STRADA, also on the Arabic page
+    <span dir="ltr" class:list={['inline-flex items-center gap-2', className]}>
+      <Image src={mark} alt="" width={64} densities={[1, 2]} class="h-8 w-auto" loading="eager" />
+      <Image src={word} alt={site.brand} width={110} densities={[1, 2]} class="h-[15px] w-auto" loading="eager" />
+    </span>
+  ) : (
+    <Image src={full} alt={site.brand} width={140} densities={[1, 2]} class:list={['h-auto', className]} loading="lazy" />
+  )
+}

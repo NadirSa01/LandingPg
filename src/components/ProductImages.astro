@@ -1,0 +1,65 @@
+---
+/**
+ * Shows the main (first) image of the selected color.
+ * All colors are rendered; Alpine shows only the selected one.
+ * Hidden images are lazy-loaded, so they don't slow down the page.
+ */
+import { Picture } from 'astro:assets';
+import { product } from '../config/product';
+import { productImage } from '../lib/images';
+import { useT, colorLabel, fill } from '../lib/i18n';
+
+interface Props {
+  /** true for the hero (loads first, high priority) */
+  priority?: boolean;
+  sizes: string;
+  class?: string;
+}
+const { priority = false, sizes, class: className = '' } = Astro.props;
+const { lang, t } = useT(Astro.url);
+---
+
+<!--
+  Images are stacked; changing color crossfades them (200ms in, 150ms out).
+  The shoe is centered in a square box (as big as the card allows) and never cropped (object-contain).
+  mix-blend-multiply: the photo's white background melts into the white card,
+  and the soft shadow below the shoe shows through it.
+-->
+<div class:list={['relative h-full w-full', className]}>
+{
+  product.colors.map((c, i) => (
+    <div
+      x-show={`$store.shop.color === '${c.id}'`}
+      x-cloak={i === 0 ? undefined : ''}
+      x-transition:enter="transition-opacity duration-200 ease-out"
+      x-transition:enter-start="opacity-0"
+      x-transition:leave="transition-opacity duration-150 ease-out"
+      x-transition:leave-end="opacity-0"
+      class="absolute inset-0 flex items-center justify-center p-5 sm:p-8"
+    >
+      <!-- @container: the square below takes the smaller side of this padded area -->
+      <div class="@container-[size] grid h-full w-full place-items-center">
+        <div class="relative size-[min(100cqw,100cqh)]">
+          <!-- Soft shadow under the shoe (the shoe ends at about 72% of the photo height) -->
+          <div
+            class="pointer-events-none absolute inset-x-[16%] bottom-[23%] h-[8%] rounded-[50%] bg-brand/25 blur-xl"
+            aria-hidden="true"
+          ></div>
+          <Picture
+            src={productImage(c.images[0])}
+            alt={fill(t.imageAlt, { product: t.productName, color: colorLabel(c, lang) })}
+            formats={['avif', 'webp']}
+            fallbackFormat="webp"
+            widths={[400, 640, 900, 1200]}
+            sizes={sizes}
+            loading={priority && i === 0 ? 'eager' : 'lazy'}
+            fetchpriority={priority && i === 0 ? 'high' : 'auto'}
+            pictureAttributes={{ class: 'absolute inset-0' }}
+            class="relative h-full w-full object-contain mix-blend-multiply"
+          />
+        </div>
+      </div>
+    </div>
+  ))
+}
+</div>

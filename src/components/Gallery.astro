@@ -1,0 +1,53 @@
+---
+/**
+ * Photos of the selected color.
+ * Mobile: swipe slider (CSS scroll-snap, no library) · Desktop (lg): grid of 3.
+ */
+import { Picture } from 'astro:assets';
+import { product } from '../config/product';
+import { productImage } from '../lib/images';
+import { useT, colorLabel, fill } from '../lib/i18n';
+
+const { lang, t } = useT(Astro.url);
+---
+
+<section id="gallery" class="section" aria-labelledby="gallery-title">
+  <div class="container-page">
+    <h2 id="gallery-title" class="section-title">{t.galleryTitle}</h2>
+
+    {
+      product.colors.map((c, ci) => (
+        <div
+          x-show={`$store.shop.color === '${c.id}'`}
+          x-cloak={ci === 0 ? undefined : ''}
+          x-transition:enter="transition-opacity duration-200 ease-out"
+          x-transition:enter-start="opacity-0"
+          class="mt-8"
+        >
+          <ul
+            class="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-6 lg:overflow-visible lg:px-0"
+            aria-label={fill(t.galleryList, { color: colorLabel(c, lang) })}
+          >
+            {c.images.map((img, i) => (
+              <li class="w-[82%] shrink-0 snap-center sm:w-[60%] lg:w-auto">
+                <div class="aspect-square overflow-hidden rounded-3xl bg-white shadow-card">
+                  <Picture
+                    src={productImage(img)}
+                    alt={fill(t.galleryAlt, { product: t.productName, color: colorLabel(c, lang), n: i + 1 })}
+                    formats={['avif', 'webp']}
+                    fallbackFormat="webp"
+                    widths={[360, 600, 900]}
+                    sizes="(min-width: 1280px) 400px, (min-width: 1024px) 33vw, (min-width: 640px) 60vw, 82vw"
+                    loading="lazy"
+                    class="h-full w-full object-cover mix-blend-multiply"
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+    <p class="mt-3 text-center text-sm text-muted lg:hidden" aria-hidden="true">{t.swipeHint}</p>
+  </div>
+</section>

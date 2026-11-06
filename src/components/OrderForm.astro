@@ -1,0 +1,273 @@
+---
+/**
+ * ORDER FORM (id="order")
+ * Logic lives in src/scripts/app.ts → Alpine.data('orderForm').
+ * Mobile: full width · Desktop (lg): product summary + centered form card.
+ */
+import Plus from '@lucide/astro/icons/plus';
+import X from '@lucide/astro/icons/x';
+import Ruler from '@lucide/astro/icons/ruler';
+import LoaderCircle from '@lucide/astro/icons/loader-circle';
+import Banknote from '@lucide/astro/icons/banknote';
+import { product } from '../config/product';
+import { useT, colorLabel, localePath } from '../lib/i18n';
+import ProductImages from './ProductImages.astro';
+import PriceTag from './PriceTag.astro';
+import WhatsAppIcon from './WhatsAppIcon.astro';
+
+const { lang, t } = useT(Astro.url);
+const f = t.form;
+const cur = t.currencyLabel;
+
+// Texts the browser script (app.ts) needs, for THIS language only
+const pageData = {
+  lang,
+  thanksUrl: localePath(lang, '/merci'),
+  productName: t.productName,
+  currencyLabel: cur,
+  otherCity: t.otherCity,
+  colorLabels: Object.fromEntries(product.colors.map((c) => [c.id, colorLabel(c, lang)])),
+  form: f,
+  errors: t.errors,
+};
+// "<" escaped so the JSON can never close the <script> tag
+const pageDataJson = JSON.stringify(pageData).replace(/</g, '\\u003c');
+---
+
+<script is:inline type="application/json" id="page-data" set:html={pageDataJson} />
+
+<section id="order" class="section bg-sand" aria-labelledby="order-title">
+  <div class="container-page grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)] lg:justify-center xl:gap-16">
+    <!-- Product summary (desktop only) -->
+    <aside class="hidden lg:sticky lg:top-16 lg:block" aria-label={t.productSummary}>
+      <div class="aspect-square overflow-hidden rounded-3xl bg-white shadow-soft">
+        <ProductImages sizes="(min-width: 1280px) 560px, 45vw" />
+      </div>
+      <p class="mt-6 text-2xl font-extrabold text-brand">{t.productName}</p>
+      <PriceTag size="md" class="mt-2" />
+      <p class="mt-3 flex items-center gap-2 font-bold text-brand">
+        <Banknote class="size-5 text-accent" aria-hidden="true" />
+        {t.topBar}
+      </p>
+    </aside>
+
+    <!-- Form card -->
+    <div class="mx-auto w-full max-w-[560px] rounded-3xl bg-white p-4 shadow-soft sm:p-8">
+      <h2 id="order-title" class="text-center text-[clamp(1.5rem,4.5vw,2rem)] font-extrabold text-brand">{f.title}</h2>
+      <p class="mt-1 text-center text-muted">{f.subtitle}</p>
+
+      <form
+        id="order-form"
+        x-data="orderForm"
+        novalidate
+        class="mt-6 flex flex-col gap-5"
+        @submit.prevent="submit()"
+        @input="changed()"
+        @focusin.once="startCheckout()"
+        @click.once="startCheckout()"
+      >
+        <!-- Honeypot (anti-spam): hidden from humans, bots fill it -->
+        <div class="sr-only" aria-hidden="true">
+          <label for="website">Website</label>
+          <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" x-model="website" />
+        </div>
+
+        <!-- ===================== Pair lines (color + size) ===================== -->
+        <template x-for="(line, i) in lines" :key="line.uid">
+          <fieldset class="pair-line rounded-2xl border border-line bg-cream p-4">
+            <legend class="sr-only" x-text={`'${f.pair} ' + (i + 1)`}></legend>
+            <div class="mb-3 flex items-center justify-between gap-2">
+              <p class="text-lg font-extrabold text-brand" aria-hidden="true">
+                {f.pair} <span x-text="i + 1"></span>
+              </p>
+              <button
+                type="button"
+                x-show="lines.length > 1"
+                @click="removeLine(i)"
+                class="pressable inline-flex min-h-11 items-center gap-1 rounded-xl px-3 font-bold text-danger hover:bg-danger/10"
+                :aria-label={`'${f.remove} — ${f.pair} ' + (i + 1)`}
+              >
+                <X class="size-5" aria-hidden="true" />
+                {f.remove}
+              </button>
+            </div>
+
+            <!-- Color -->
+            <p class="mb-2 font-bold text-brand">{t.chooseColor}</p>
+            <div class="flex flex-wrap gap-2">
+              {
+                product.colors.map((c) => (
+                  <button
+                    type="button"
+                    class="pressable flex min-h-12 items-center gap-2 rounded-full border-2 bg-white py-1 ps-1 pe-3 font-bold"
+                    :class={`line.color === '${c.id}' ? 'border-brand ring-2 ring-brand/20' : 'border-line hover:border-cork'`}
+                    :aria-pressed={`(line.color === '${c.id}').toString()`}
+                    @click={`setColor(i, '${c.id}')`}
+                  >
+                    <span class="size-8 rounded-full border border-black/10" style={`background:${c.hex}`} />
+                    {colorLabel(c, lang)}
+                  </button>
+                ))
+              }
+            </div>
+
+            <!-- Size -->
+            <div class="mt-4 mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p class="font-bold text-brand" :id="'size-label-' + line.uid">{t.chooseSize} <span class="text-danger">*</span></p>
+              <button
+                type="button"
+                class="pressable inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 font-bold text-accent underline underline-offset-4 hover:bg-accent/10"
+                @click="$dispatch('open-size-guide')"
+              >
+                <Ruler class="size-5" aria-hidden="true" />
+                {t.sizeGuide}
+              </button>
+            </div>
+            <div
+              class="flex flex-wrap gap-2 rounded-xl outline-none"
+              role="group"
+              tabindex="-1"
+              :aria-labelledby="'size-label-' + line.uid"
+              :aria-invalid="err('lines.' + i + '.size') ? 'true' : 'false'"
+              :aria-describedby="'size-error-' + line.uid"
+            >
+              <template x-for="s in sizesOf(line.color)" :key="s">
+                <button
+                  type="button"
+                  class="pressable grid h-12 min-w-12 place-items-center rounded-xl border-2 px-2 text-lg font-extrabold tabular-nums"
+                  :class="line.size === s ? 'border-brand bg-brand text-white' : 'border-line bg-white text-ink hover:border-cork'"
+                  :aria-pressed="(line.size === s).toString()"
+                  @click="setSize(i, s)"
+                  x-text="s"></button>
+              </template>
+            </div>
+            <p class="field-error" :id="'size-error-' + line.uid" x-show="err('lines.' + i + '.size')" x-text="err('lines.' + i + '.size')"></p>
+          </fieldset>
+        </template>
+
+        <button
+          type="button"
+          x-show="canAdd"
+          @click="addLine()"
+          class="pressable inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-cork bg-cream font-extrabold text-brand hover:bg-sand"
+        >
+          <Plus class="size-5" aria-hidden="true" />
+          {f.addPair}
+        </button>
+        <p x-show="bundleHint" x-text="bundleHint" class="-mt-2 text-center font-bold text-accent"></p>
+
+        <!-- ===================== Customer info ===================== -->
+        <div>
+          <label for="f-name" class="field-label">{f.name} <span class="text-danger">*</span></label>
+          <input
+            id="f-name" name="name" type="text" autocomplete="name" class="field-input" placeholder={f.namePlaceholder}
+            x-model="name" @blur="blur('name')"
+            :aria-invalid="err('name') ? 'true' : 'false'" aria-describedby="e-name"
+          />
+          <p id="e-name" class="field-error" x-show="err('name')" x-text="err('name')"></p>
+        </div>
+
+        <div>
+          <label for="f-phone" class="field-label">{f.phone} <span class="text-danger">*</span></label>
+          <!-- Phone numbers are always written left-to-right (aligned right on the Arabic page) -->
+          <input
+            id="f-phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" dir="ltr"
+            class="field-input rtl:text-right" placeholder="06XXXXXXXX"
+            x-model="phone" @blur="blur('phone')"
+            :aria-invalid="err('phone') ? 'true' : 'false'" aria-describedby="e-phone"
+          />
+          <p id="e-phone" class="field-error" x-show="err('phone')" x-text="err('phone')"></p>
+        </div>
+
+        <div>
+          <label for="f-city" class="field-label">{f.city} <span class="text-danger">*</span></label>
+          <input
+            id="f-city" name="city" type="text" list="cities-list" autocomplete="address-level2"
+            class="field-input" placeholder={f.cityPlaceholder}
+            x-model="city" @blur="blur('city')" @change="changed()"
+            :aria-invalid="err('city') ? 'true' : 'false'" aria-describedby="e-city"
+          />
+          <datalist id="cities-list">
+            {[...t.cities, t.otherCity].map((c) => <option value={c} />)}
+          </datalist>
+          <p id="e-city" class="field-error" x-show="err('city')" x-text="err('city')"></p>
+
+          <div x-show="showCityOther" x-cloak class="mt-3">
+            <label for="f-city-other" class="field-label">{f.cityOther} <span class="text-danger">*</span></label>
+            <input
+              id="f-city-other" name="cityOther" type="text" class="field-input"
+              x-model="cityOther" @blur="blur('cityOther')"
+              :aria-invalid="err('cityOther') ? 'true' : 'false'" aria-describedby="e-city-other"
+            />
+            <p id="e-city-other" class="field-error" x-show="err('cityOther')" x-text="err('cityOther')"></p>
+          </div>
+        </div>
+
+        <div>
+          <label for="f-address" class="field-label">{f.address} <span class="text-danger">*</span></label>
+          <input
+            id="f-address" name="address" type="text" autocomplete="street-address" class="field-input"
+            placeholder={f.addressPlaceholder}
+            x-model="address" @blur="blur('address')"
+            :aria-invalid="err('address') ? 'true' : 'false'" aria-describedby="e-address"
+          />
+          <p id="e-address" class="field-error" x-show="err('address')" x-text="err('address')"></p>
+        </div>
+
+        <div>
+          <label for="f-note" class="field-label">{f.note} <span class="font-normal text-muted">{f.optional}</span></label>
+          <textarea
+            id="f-note" name="note" rows="2" class="field-input resize-y" placeholder={f.notePlaceholder}
+            x-model="note" @blur="blur('note')"
+            :aria-invalid="err('note') ? 'true' : 'false'" aria-describedby="e-note"></textarea>
+          <p id="e-note" class="field-error" x-show="err('note')" x-text="err('note')"></p>
+        </div>
+
+        <!-- ===================== Live total ===================== -->
+        <div class="rounded-2xl bg-cream p-4" aria-live="polite">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-bold text-muted">{f.pairsCount}</span>
+            <span class="text-lg font-extrabold text-brand tabular-nums" x-text="pairs">1</span>
+          </div>
+          <div class="flex items-center justify-between gap-3" x-show="saving > 0" x-cloak>
+            <span class="font-bold text-success">{f.saving}</span>
+            <span class="font-extrabold whitespace-nowrap text-success tabular-nums"><span x-text="saving"></span> {cur}</span>
+          </div>
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-bold text-muted">{f.delivery}</span>
+            <span class="font-extrabold text-success">{f.free}</span>
+          </div>
+          <div class="mt-2 flex items-center justify-between gap-3 border-t border-line pt-3">
+            <span class="text-lg font-extrabold text-brand">{f.total}</span>
+            <span class="text-2xl font-extrabold whitespace-nowrap text-accent tabular-nums"><span x-text="total">{product.price}</span> {cur}</span>
+          </div>
+        </div>
+
+        <!-- ===================== Submit ===================== -->
+        <button type="submit" class="btn-primary w-full" :disabled="status === 'sending'" :aria-busy="(status === 'sending').toString()">
+          <span x-show="status !== 'sending'">{f.submit}</span>
+          <span x-show="status === 'sending'" x-cloak class="inline-flex items-center gap-2">
+            <LoaderCircle class="size-6 animate-spin" aria-hidden="true" />
+            {f.sending}
+          </span>
+        </button>
+
+        <!-- Error message + manual WhatsApp order -->
+        <div x-show="status === 'error'" x-cloak role="alert" class="rounded-2xl border border-danger/30 bg-danger/5 p-4 text-center">
+          <p class="font-bold text-danger">{f.error}</p>
+          <a
+            :href="whatsappOrderUrl"
+            target="_blank"
+            rel="noopener"
+            class="pressable mt-3 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-whatsapp px-5 font-extrabold text-white hover:bg-whatsapp-dark"
+          >
+            <WhatsAppIcon class="size-6" />
+            {f.whatsappOrder}
+          </a>
+        </div>
+
+        <p class="text-center text-sm text-muted">{f.secure}</p>
+      </form>
+    </div>
+  </div>
+</section>

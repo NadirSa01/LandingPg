@@ -1,0 +1,73 @@
+---
+/** FAQ accordion generated from the translation file (first question open by default).
+ *  Open/close animation: .accordion-panel in global.css */
+import ChevronDown from '@lucide/astro/icons/chevron-down';
+import { useT } from '../lib/i18n';
+
+const { t } = useT(Astro.url);
+
+/** Splits an answer into text and {{link}} parts (a link opens the size guide) */
+const parts = (answer: string) =>
+  answer.split(/(\{\{.+?\}\})/).map((p) => {
+    const m = p.match(/^\{\{(.+)\}\}$/);
+    return m ? { link: m[1] } : { text: p };
+  });
+---
+
+<section id="faq" class="section bg-white" aria-labelledby="faq-title">
+  <div class="container-page max-w-3xl">
+    <h2 id="faq-title" class="section-title">{t.faqTitle}</h2>
+
+    <div class="mt-10 flex flex-col gap-3" x-data="{ open: 0 }">
+      {
+        t.faq.map((item, i) => (
+          <div class="overflow-hidden rounded-2xl border border-line bg-cream">
+            <h3>
+              <button
+                type="button"
+                id={`faq-q-${i}`}
+                class="pressable flex min-h-14 w-full items-center justify-between gap-3 px-5 py-3 text-start text-lg font-bold text-brand hover:bg-sand"
+                aria-controls={`faq-a-${i}`}
+                aria-expanded={i === 0 ? 'true' : 'false'}
+                :aria-expanded={`(open === ${i}).toString()`}
+                @click={`open = open === ${i} ? null : ${i}`}
+              >
+                <span>{item.q}</span>
+                <span class="shrink-0 transition-transform duration-200 ease-in-out" :class={`open === ${i} && 'rotate-180'`}>
+                  <ChevronDown class="size-6 text-accent" aria-hidden="true" />
+                </span>
+              </button>
+            </h3>
+            <div
+              id={`faq-a-${i}`}
+              role="region"
+              aria-labelledby={`faq-q-${i}`}
+              class="accordion-panel"
+              data-open={i === 0 ? 'true' : 'false'}
+              :data-open={`(open === ${i}).toString()`}
+              :inert={`open !== ${i}`}
+            >
+              <div class="px-5 text-ink">
+              <p class="pb-5">
+                {parts(item.a).map((p) =>
+                  'link' in p ? (
+                    <button
+                      type="button"
+                      class="font-bold text-accent underline underline-offset-4 hover:text-brand"
+                      @click="$dispatch('open-size-guide')"
+                    >
+                      {p.link}
+                    </button>
+                  ) : (
+                    p.text
+                  ),
+                )}
+              </p>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

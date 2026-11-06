@@ -1,0 +1,307 @@
+@import 'tailwindcss';
+
+/* Arabic font, self-hosted (only the needed subsets are downloaded by the browser) */
+@import '@fontsource/cairo/400.css';
+@import '@fontsource/cairo/600.css';
+@import '@fontsource/cairo/700.css';
+@import '@fontsource/cairo/800.css';
+
+/* ===========================================================================
+   BRAND THEME — change colors / fonts here.
+   Each color becomes a Tailwind class: bg-brand, text-accent, border-cork…
+   =========================================================================== */
+@theme {
+  --font-sans: 'Cairo', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+
+  --color-brand: #3b2a1e; /* dark brown — titles, dark backgrounds */
+  --color-ink: #2a211b; /* body text */
+  --color-muted: #6f6359; /* secondary text */
+  --color-accent: #b83c0b; /* strong orange — buttons / CTA */
+  --color-accent-dark: #9a3412; /* button hover */
+  --color-cork: #c69c6d; /* cork tone (decorations, text on dark backgrounds) */
+  --color-cork-dark: #8a6239; /* cork tone for text on light backgrounds (readable) */
+  --color-sand: #f3ece2; /* beige backgrounds */
+  --color-cream: #faf7f2; /* off-white page background */
+  --color-line: #e7ddd0; /* borders */
+  --color-success: #15803d;
+  --color-danger: #b91c1c;
+  --color-whatsapp: #15803d; /* WhatsApp buttons (darker than the official green so white text is readable) */
+  --color-whatsapp-dark: #116632;
+
+  --shadow-soft: 0 10px 30px -12px rgb(59 42 30 / 0.18);
+  --shadow-card: 0 4px 18px -6px rgb(59 42 30 / 0.14);
+
+  /* Motion curves (from Emil Kowalski's design-engineering skills).
+     Overriding --ease-out / --ease-in-out makes Tailwind's ease-out / ease-in-out classes use them. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* strong ease-out: things entering / exiting, presses */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); /* things moving on screen (chevron rotation) */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* iOS-like sheet (mobile modal) */
+}
+
+/* ------------------------------------------------------------- Base ------ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    /* space above anchors (#order…) = fixed announcement bar (2.25rem) + 1rem */
+    scroll-padding-top: 3.25rem;
+  }
+  body {
+    @apply bg-cream font-sans text-ink antialiased;
+    overflow-x: hidden;
+  }
+  /* Prevent iPhone auto-zoom: inputs >= 16px */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+  button {
+    cursor: pointer;
+  }
+  /* Mobile: no 300ms tap delay / double-tap zoom on buttons, no text selection on long-press */
+  a,
+  button,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+  button {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  /* Alpine: hide elements until Alpine is ready */
+  [x-cloak] {
+    display: none !important;
+  }
+}
+
+/* -------------------------------------------------------- Components ----- */
+@layer components {
+  /* Page container — content never stretches on big screens */
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6;
+  }
+  .section {
+    @apply py-14 sm:py-20;
+  }
+  .section-title {
+    @apply text-center text-[clamp(1.5rem,4.5vw,2.25rem)] leading-tight font-extrabold text-brand;
+  }
+
+  /* Anything tappable: subtle press feedback (scale 0.97, 160ms) + quick color changes.
+     Only transform + colors are animated (never "all"). */
+  .pressable,
+  .btn-primary {
+    transition:
+      transform 160ms var(--ease-out),
+      background-color 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease,
+      box-shadow 150ms ease;
+  }
+  .pressable:active:not(:disabled),
+  .btn-primary:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  /* Primary CTA button */
+  .btn-primary {
+    @apply inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-6 text-lg font-extrabold text-white shadow-soft hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-70;
+  }
+
+  /* Form fields */
+  .field-input {
+    @apply block min-h-12 w-full rounded-xl border border-line bg-white px-4 py-3 text-ink placeholder:text-muted/70 transition-[border-color,box-shadow] duration-150 ease-out focus:border-accent focus:ring-2 focus:ring-accent/25 focus:outline-none;
+  }
+  .field-input[aria-invalid='true'] {
+    @apply border-danger ring-2 ring-danger/15;
+  }
+  .field-label {
+    @apply mb-1.5 block font-bold text-brand;
+  }
+  .field-error {
+    @apply mt-1.5 text-sm font-semibold text-danger;
+  }
+}
+
+/* ------------------------------------------------ Hero entrance --------- */
+/* The ONLY entrance animation of the page (no repeated scroll reveals).
+   Elements with .hero-in fade + rise in a short wave: delay = --i × 70ms.
+   The hero image is not animated, so the page still paints fast (LCP). */
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.hero-in {
+  animation: hero-in 500ms var(--ease-out) backwards; /* backwards = releases transform when done (press feedback still works) */
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ------------------------------------------------ Announcement marquee --- */
+/* Constant motion → linear. The track holds the messages twice and moves by half
+   its width, so the loop is seamless. Arabic (RTL) scrolls the other way. */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes marquee-rtl {
+  to {
+    transform: translateX(50%);
+  }
+}
+.marquee {
+  animation: marquee 80s linear infinite;
+}
+[dir='rtl'] .marquee {
+  animation-name: marquee-rtl;
+}
+@media (hover: hover) and (pointer: fine) {
+  .marquee:hover {
+    animation-play-state: paused;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------ Pair lines ------------- */
+/* A new pair line (+ زيد زوج آخر) slides in gently */
+.pair-line {
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ------------------------------------------------ FAQ accordion ---------- */
+/* Height animation via grid rows (0fr → 1fr) — the accepted exception for accordions */
+.accordion-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 200ms var(--ease-out),
+    opacity 150ms ease;
+}
+.accordion-panel[data-open='true'] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.accordion-panel > div {
+  overflow: hidden;
+}
+
+/* ------------------------------------------------ Size-guide modal ------- */
+/* Native <dialog>: enters 250ms, exits faster (150ms).
+   Mobile = full-screen sheet sliding up; desktop = centered, scale 0.96 → 1. */
+dialog {
+  opacity: 0;
+  transform: translateY(100%);
+  transition:
+    opacity 150ms ease,
+    transform 150ms var(--ease-out),
+    overlay 150ms allow-discrete,
+    display 150ms allow-discrete;
+}
+dialog[open] {
+  opacity: 1;
+  transform: none;
+  transition-duration: 300ms;
+  transition-timing-function: ease, var(--ease-drawer);
+}
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+@media (min-width: 640px) {
+  dialog {
+    transform: scale(0.96);
+  }
+  dialog[open] {
+    transition-duration: 250ms;
+    transition-timing-function: ease, var(--ease-out);
+  }
+  @starting-style {
+    dialog[open] {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+}
+dialog::backdrop {
+  background: rgb(42 33 27 / 0);
+  transition:
+    background-color 200ms ease,
+    overlay 200ms allow-discrete,
+    display 200ms allow-discrete;
+}
+dialog[open]::backdrop {
+  background: rgb(42 33 27 / 0.6);
+}
+@starting-style {
+  dialog[open]::backdrop {
+    background: rgb(42 33 27 / 0);
+  }
+}
+/* lock page scroll while the modal is open */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+/* ------------------------------------------------ Reduced motion --------- */
+/* "Fewer and gentler, not zero": keep the fades, remove every movement. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .hero-in {
+    animation-name: fade-only;
+    animation-delay: 0ms;
+  }
+  .pressable:active:not(:disabled),
+  .btn-primary:active:not(:disabled) {
+    transform: none;
+  }
+  .pair-line {
+    @starting-style {
+      transform: none;
+    }
+  }
+  dialog,
+  dialog[open] {
+    transform: none !important;
+  }
+  @starting-style {
+    dialog[open] {
+      transform: none !important;
+    }
+  }
+}
+@keyframes fade-only {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Gallery slider: hide scrollbar */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

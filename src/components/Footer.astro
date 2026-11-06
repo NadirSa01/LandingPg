@@ -1,0 +1,134 @@
+---
+/**
+ * Footer: logo + tagline + trust points · quick links · contact · languages · © year
+ * Mobile: stacked · Tablet: 2 columns · Desktop: 4 columns.
+ */
+import Banknote from '@lucide/astro/icons/banknote';
+import Truck from '@lucide/astro/icons/truck';
+import RefreshCw from '@lucide/astro/icons/refresh-cw';
+import ArrowUp from '@lucide/astro/icons/arrow-up';
+import { site } from '../config/product';
+import { whatsappLink, isPlaceholder } from '../lib/whatsapp';
+import { useT, fill, localePath } from '../lib/i18n';
+import Logo from './Logo.astro';
+import LanguageSwitcher from './LanguageSwitcher.astro';
+import WhatsAppIcon from './WhatsAppIcon.astro';
+import InstagramIcon from './InstagramIcon.astro';
+
+interface Props {
+  /** true on the landing page (shows the size-guide link, which opens the modal) */
+  home?: boolean;
+}
+const { home = false } = Astro.props;
+const { lang, t } = useT(Astro.url);
+const year = new Date().getFullYear();
+const homeUrl = localePath(lang, '/');
+const trustIcons = [Banknote, Truck, RefreshCw];
+
+const links = [
+  { label: t.orderNow, href: `${homeUrl}#order` },
+  { label: t.offerTitle, href: `${homeUrl}#offer` },
+  { label: t.faqTitle, href: `${homeUrl}#faq` },
+];
+
+const titleClass = 'mb-4 text-sm font-extrabold tracking-wide text-cork uppercase';
+const linkClass = 'pressable inline-flex min-h-11 items-center rounded-lg font-semibold text-white/85 hover:text-white';
+---
+
+<!-- pb-28 on mobile = room for the sticky order bar -->
+<footer class="bg-brand pt-14 pb-28 text-white lg:pb-0">
+  <div class="container-page">
+    <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1.2fr_auto] lg:gap-12">
+      <!-- Brand -->
+      <div class="flex flex-col items-start gap-5 sm:col-span-2 lg:col-span-1">
+        <a href={homeUrl} class="pressable rounded-lg" aria-label={`${site.brand} — ${t.home}`}>
+          <Logo variant="stacked" tone="light" class="w-28" />
+        </a>
+        <p class="max-w-sm text-white/80">{t.footer.tagline}</p>
+        <ul class="flex flex-wrap gap-2">
+          {
+            t.trust.map((label, i) => {
+              const Icon = trustIcons[i] ?? Banknote;
+              return (
+                <li class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-bold">
+                  <Icon class="size-4 text-cork" aria-hidden="true" />
+                  {label}
+                </li>
+              );
+            })
+          }
+        </ul>
+      </div>
+
+      <!-- Links -->
+      <nav aria-labelledby="footer-links">
+        <h2 id="footer-links" class={titleClass}>{t.footer.links}</h2>
+        <ul class="flex flex-col">
+          {
+            links.map((l) => (
+              <li>
+                <a href={l.href} class={linkClass}>{l.label}</a>
+              </li>
+            ))
+          }
+          {
+            home && (
+              <li>
+                <button type="button" class={linkClass} @click="$dispatch('open-size-guide')">
+                  {t.sizeGuide}
+                </button>
+              </li>
+            )
+          }
+        </ul>
+      </nav>
+
+      <!-- Contact -->
+      <div>
+        <h2 class={titleClass}>{t.footer.contact}</h2>
+        <p class="mb-4 text-white/80">{t.footer.contactText}</p>
+        <div class="flex flex-wrap gap-3">
+          <a
+            href={whatsappLink(fill(t.whatsappMessage, { product: t.productName }))}
+            target="_blank"
+            rel="noopener"
+            class="pressable inline-flex min-h-12 items-center gap-2 rounded-full bg-whatsapp px-5 font-extrabold text-white hover:bg-whatsapp-dark"
+          >
+            <WhatsAppIcon class="size-5" />
+            {t.whatsapp}
+          </a>
+          {
+            /* The Instagram link only appears once you set a real URL in product.ts */
+            !isPlaceholder(site.instagram) && (
+              <a
+                href={site.instagram}
+                target="_blank"
+                rel="noopener"
+                aria-label={t.instagram}
+                class="pressable grid size-12 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+              >
+                <InstagramIcon class="size-5" />
+              </a>
+            )
+          }
+        </div>
+      </div>
+
+      <!-- Language -->
+      <div>
+        <h2 class={titleClass}>{t.languageLabel}</h2>
+        <LanguageSwitcher tone="dark" />
+      </div>
+    </div>
+
+    <!-- Bottom line -->
+    <!-- lg:pe-20 = room for the floating WhatsApp button -->
+    <div class="mt-12 flex flex-col-reverse items-center justify-between gap-3 border-t border-white/10 py-6 text-sm text-white/70 sm:flex-row lg:pe-20">
+      <p>© {year} {site.brand} — {t.rights}</p>
+      <a href="#" class="pressable inline-flex min-h-11 items-center gap-1.5 rounded-lg font-bold text-white/85 hover:text-white">
+        <ArrowUp class="size-4" aria-hidden="true" />
+        {t.footer.backToTop}
+      </a>
+    </div>
+  </div>
+</footer>

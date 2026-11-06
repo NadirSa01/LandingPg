@@ -1,0 +1,107 @@
+---
+/**
+ * Base layout: <head>, SEO / Open Graph tags, fonts, Pixels,
+ * language + direction (Arabic = right-to-left, French/English = left-to-right).
+ */
+import '../styles/global.css';
+import { site } from '../config/product';
+import { isPlaceholder } from '../lib/whatsapp';
+import { useT, fill, activeLangs, basePath, localePath, translations, defaultLang } from '../lib/i18n';
+
+interface Props {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+}
+
+const { lang, t } = useT(Astro.url);
+const {
+  title = fill(t.seoTitle, { product: t.productName }),
+  description = t.seoDescription,
+  noindex = false,
+} = Astro.props;
+
+// Same page in every language (tells Google the 3 versions belong together)
+const path = basePath(Astro.url);
+const alternates = activeLangs.map((l) => ({ lang: l, href: new URL(localePath(l, path), Astro.site).href }));
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = new URL(site.ogImage, Astro.site).href;
+
+// Pixels are only loaded when a real ID is set in product.ts
+const metaId = isPlaceholder(site.metaPixelId) ? null : site.metaPixelId;
+const tiktokId = isPlaceholder(site.tiktokPixelId) ? null : site.tiktokPixelId;
+---
+
+<!doctype html>
+<html lang={lang} dir={t.meta.dir}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {alternates.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
+    <link rel="alternate" hreflang="x-default" href={new URL(localePath(defaultLang, path), Astro.site).href} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <meta name="theme-color" content="#3b2a1e" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Open Graph (Facebook, WhatsApp, Instagram…) -->
+    <meta property="og:type" content="product" />
+    <meta property="og:locale" content={t.meta.ogLocale} />
+    {activeLangs.filter((l) => l !== lang).map((l) => <meta property="og:locale:alternate" content={translations[l].meta.ogLocale} />)}
+    <meta property="og:site_name" content={site.brand} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <!-- Meta Pixel -->
+    {
+      metaId && (
+        <script is:inline define:vars={{ metaId }}>
+          !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+          n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+          document,'script','https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', metaId);
+          fbq('track', 'PageView');
+        </script>
+      )
+    }
+
+    <!-- TikTok Pixel -->
+    {
+      tiktokId && (
+        <script is:inline define:vars={{ tiktokId }}>
+          !function (w, d, t) {
+            w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+            ttq.load(tiktokId);
+            ttq.page();
+          }(window, document, 'ttq');
+        </script>
+      )
+    }
+  </head>
+  <!-- x-data on <body> = Alpine is active on the whole page -->
+  <body class="min-h-dvh" x-data>
+    {
+      metaId && (
+        <noscript>
+          <img height="1" width="1" style="display:none" alt="" src={`https://www.facebook.com/tr?id=${metaId}&ev=PageView&noscript=1`} />
+        </noscript>
+      )
+    }
+    <slot />
+  </body>
+</html>

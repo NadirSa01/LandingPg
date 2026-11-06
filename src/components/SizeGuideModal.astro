@@ -1,0 +1,65 @@
+---
+/**
+ * Size guide modal (native <dialog>: focus trap + Escape key for free).
+ * Open it from anywhere with:  @click="$dispatch('open-size-guide')"
+ * Closes with ✕, Escape and click outside. Full screen on mobile, centered on desktop.
+ */
+import X from '@lucide/astro/icons/x';
+import Ruler from '@lucide/astro/icons/ruler';
+import { product } from '../config/product';
+import { useT } from '../lib/i18n';
+
+const { t } = useT(Astro.url);
+---
+
+<dialog
+  id="size-guide"
+  aria-labelledby="size-guide-title"
+  x-data
+  @open-size-guide.window="$el.showModal()"
+  @click="if ($event.target === $el) $el.close()"
+  class="m-0 h-dvh max-h-none w-full max-w-none bg-white p-0 text-ink sm:m-auto sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-3xl sm:shadow-soft"
+>
+  <div class="flex h-full flex-col sm:max-h-[90vh]">
+    <header class="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
+      <h2 id="size-guide-title" class="flex items-center gap-2 text-xl font-extrabold text-brand">
+        <Ruler class="size-6 text-accent" aria-hidden="true" />
+        {t.sizeGuide}
+      </h2>
+      <button
+        type="button"
+        class="pressable grid size-12 place-items-center rounded-full hover:bg-sand"
+        aria-label={t.close}
+        @click="$el.closest('dialog').close()"
+      >
+        <X class="size-6" aria-hidden="true" />
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto px-5 py-5">
+      <table class="w-full text-center text-lg">
+        <thead class="bg-brand text-white">
+          <tr>
+            <th scope="col" class="py-3 font-bold">{t.sizeTable.size}</th>
+            <th scope="col" class="py-3 font-bold">{t.sizeTable.length}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            product.sizeGuide.map((row) => (
+              <tr class="border-b border-line even:bg-cream">
+                <td class="py-2.5 font-extrabold text-brand">{row.eu}</td>
+                <td class="py-2.5">{row.cm}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+
+      <div class="mt-5 rounded-2xl bg-sand p-4">
+        <p class="font-extrabold text-brand">{t.sizeTable.howTo}</p>
+        <p class="mt-1 text-ink">{t.sizeGuideTip}</p>
+      </div>
+    </div>
+  </div>
+</dialog>

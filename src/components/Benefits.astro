@@ -1,0 +1,59 @@
+---
+/** 4 benefit cards (icons from Lucide, texts from product.ts) */
+import Footprints from '@lucide/astro/icons/footprints';
+import Sparkles from '@lucide/astro/icons/sparkles';
+import Shield from '@lucide/astro/icons/shield';
+import ShieldCheck from '@lucide/astro/icons/shield-check';
+import Truck from '@lucide/astro/icons/truck';
+import Heart from '@lucide/astro/icons/heart';
+import Leaf from '@lucide/astro/icons/leaf';
+import Feather from '@lucide/astro/icons/feather';
+import Droplets from '@lucide/astro/icons/droplets';
+import Sun from '@lucide/astro/icons/sun';
+import BadgeCheck from '@lucide/astro/icons/badge-check';
+import RefreshCw from '@lucide/astro/icons/refresh-cw';
+import Banknote from '@lucide/astro/icons/banknote';
+import { product } from '../config/product';
+import { useT } from '../lib/i18n';
+
+const { t } = useT(Astro.url);
+
+// Icon names you can use in product.ts → benefitIcons
+const icons = {
+  footprints: Footprints,
+  sparkles: Sparkles,
+  shield: Shield,
+  'shield-check': ShieldCheck,
+  truck: Truck,
+  heart: Heart,
+  leaf: Leaf,
+  feather: Feather,
+  droplets: Droplets,
+  sun: Sun,
+  'badge-check': BadgeCheck,
+  'refresh-cw': RefreshCw,
+  banknote: Banknote,
+};
+---
+
+<section class="section bg-white" aria-labelledby="benefits-title">
+  <div class="container-page">
+    <h2 id="benefits-title" class="section-title">{t.benefitsTitle}</h2>
+    <ul class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+      {
+        t.benefits.map((b, i) => {
+          const Icon = icons[product.benefitIcons[i] as keyof typeof icons] ?? Sparkles;
+          return (
+            <li class="rounded-3xl border border-line bg-cream p-6 text-center shadow-card">
+              <span class="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-accent/10 text-accent">
+                <Icon class="size-7" aria-hidden="true" />
+              </span>
+              <h3 class="text-xl font-extrabold text-brand">{b.title}</h3>
+              <p class="mt-2 text-muted">{b.text}</p>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</section>

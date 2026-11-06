@@ -1,0 +1,25 @@
+---
+/**
+ * Announcement bar (stays fixed at the top while scrolling) + header with logo and language switcher.
+ * The bar is outside <header> so it can stay pinned for the whole page.
+ */
+import TopBar from './TopBar.astro';
+import Logo from './Logo.astro';
+import LanguageSwitcher from './LanguageSwitcher.astro';
+import { useT, localePath } from '../lib/i18n';
+import { site } from '../config/product';
+
+const { lang, t } = useT(Astro.url);
+---
+
+<TopBar />
+<header>
+  <div class="border-b border-line bg-cream">
+    <div class="container-page flex h-14 items-center justify-between gap-3">
+      <a href={localePath(lang, '/')} class="pressable -ms-1 rounded-lg p-1" aria-label={`${site.brand} — ${t.home}`}>
+        <Logo />
+      </a>
+      <LanguageSwitcher />
+    </div>
+  </div>
+</header>

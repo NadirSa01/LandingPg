@@ -1,0 +1,11 @@
+---
+/** Thank-you page in the other languages — "/fr/merci", "/en/merci" */
+import ThankYouPage from '../../views/ThankYouPage.astro';
+import { prefixedLangs } from '../../lib/i18n';
+
+export function getStaticPaths() {
+  return prefixedLangs.map((lang) => ({ params: { lang } }));
+}
+---
+
+<ThankYouPage />

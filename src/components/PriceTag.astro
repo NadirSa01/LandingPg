@@ -1,0 +1,29 @@
+---
+/** Price + old price struck through + automatic discount badge */
+import { product } from '../config/product';
+import { discountPercent } from '../lib/pricing';
+import { useT } from '../lib/i18n';
+
+interface Props {
+  size?: 'lg' | 'md';
+  class?: string;
+}
+const { size = 'lg', class: className = '' } = Astro.props;
+const { t } = useT(Astro.url);
+---
+
+<div class:list={['flex flex-wrap items-center gap-x-3 gap-y-1', className]}>
+  <span class:list={['font-extrabold whitespace-nowrap text-accent tabular-nums', size === 'lg' ? 'text-4xl sm:text-5xl' : 'text-3xl']}>
+    {product.price} <span class="text-lg font-bold sm:text-xl">{t.currencyLabel}</span>
+  </span>
+  <del class:list={['font-semibold whitespace-nowrap text-muted tabular-nums', size === 'lg' ? 'text-xl' : 'text-lg']}>
+    <span class="sr-only">{t.oldPrice}</span>{product.oldPrice} {t.currencyLabel}
+  </del>
+  {
+    discountPercent > 0 && (
+      <span dir="ltr" class="rounded-full bg-accent px-3 py-1 text-sm font-extrabold text-white">
+        -{discountPercent}%
+      </span>
+    )
+  }
+</div>

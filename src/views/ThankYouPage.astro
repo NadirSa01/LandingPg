@@ -1,0 +1,107 @@
+---
+/**
+ * Thank-you page, shown after a successful order (same for every language).
+ * The order summary is read from sessionStorage (saved by the form in app.ts).
+ */
+import CircleCheck from '@lucide/astro/icons/circle-check';
+import Layout from '../layouts/Layout.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import Footer from '../components/Footer.astro';
+import WhatsAppIcon from '../components/WhatsAppIcon.astro';
+import WhatsAppButton from '../components/WhatsAppButton.astro';
+import { site } from '../config/product';
+import { whatsappLink } from '../lib/whatsapp';
+import { useT, fill, localePath } from '../lib/i18n';
+
+const { lang, t } = useT(Astro.url);
+const th = t.thanks;
+---
+
+<Layout title={`${th.title} — ${site.brand}`} noindex>
+  <SiteHeader />
+
+  <main class="container-page py-12 sm:py-20">
+    <div class="mx-auto max-w-xl rounded-3xl bg-white p-6 text-center shadow-soft sm:p-10">
+      <CircleCheck class="mx-auto size-16 text-success" aria-hidden="true" />
+      <h1 class="mt-4 text-[clamp(1.6rem,5vw,2.25rem)] leading-tight font-extrabold text-brand">{th.title}</h1>
+      <p class="mt-3 text-lg text-ink">{th.text}</p>
+
+      <!-- Order summary (filled by the script below). data-pair-line = text template of one pair -->
+      <div id="summary" hidden class="mt-8 rounded-2xl bg-cream p-5 text-start" data-pair-line={th.pairLine}>
+        <h2 class="mb-3 text-lg font-extrabold text-brand">{th.summary}</h2>
+        <ul id="summary-items" class="flex flex-col gap-1 font-bold text-ink"></ul>
+        <dl class="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 border-t border-line pt-4">
+          <dt class="text-muted">{th.name}</dt><dd id="s-name" class="font-bold"></dd>
+          <dt class="text-muted">{th.phone}</dt><dd id="s-phone" class="font-bold rtl:text-right" dir="ltr"></dd>
+          <dt class="text-muted">{th.city}</dt><dd id="s-city" class="font-bold"></dd>
+          <dt class="text-muted">{th.address}</dt><dd id="s-address" class="font-bold"></dd>
+        </dl>
+        <p class="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4 text-lg font-extrabold">
+          <span class="text-brand">{th.total}</span>
+          <span class="whitespace-nowrap text-accent tabular-nums"><span id="s-total"></span> {t.currencyLabel}</span>
+        </p>
+      </div>
+
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <a
+          href={whatsappLink(fill(th.contactMessage, { product: t.productName }))}
+          target="_blank"
+          rel="noopener"
+          class="pressable inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-whatsapp px-5 font-extrabold text-white hover:bg-whatsapp-dark"
+        >
+          <WhatsAppIcon class="size-6" />
+          {th.contact}
+        </a>
+        <a href={localePath(lang, '/')} class="pressable inline-flex min-h-12 items-center justify-center rounded-2xl border-2 border-line px-5 font-bold text-brand hover:bg-sand">
+          {th.back}
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+  <WhatsAppButton />
+</Layout>
+
+<script>
+  import { LAST_ORDER_KEY } from '../lib/constants';
+
+  type Summary = {
+    name: string;
+    phone: string;
+    city: string;
+    address: string;
+    total: number;
+    items: { color: string; size: number }[];
+  };
+
+  try {
+    const raw = sessionStorage.getItem(LAST_ORDER_KEY);
+    const box = document.getElementById('summary');
+    if (raw && box) {
+      const o = JSON.parse(raw) as Summary;
+      const set = (id: string, text: string) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text; // textContent = safe (no HTML injection)
+      };
+      set('s-name', o.name);
+      set('s-phone', o.phone);
+      set('s-city', o.city);
+      set('s-address', o.address);
+      set('s-total', String(o.total));
+      const template = box.dataset.pairLine || '{n}: {color} {size}';
+      const list = document.getElementById('summary-items');
+      o.items.forEach((item, i) => {
+        const li = document.createElement('li');
+        li.textContent = template
+          .replace('{n}', String(i + 1))
+          .replace('{color}', item.color)
+          .replace('{size}', String(item.size));
+        list?.appendChild(li);
+      });
+      box.removeAttribute('hidden');
+    }
+  } catch {
+    /* no summary → only the thank-you message is shown */
+  }
+</script>

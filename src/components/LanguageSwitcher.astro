@@ -1,0 +1,44 @@
+---
+/** Language switcher (ع | FR | EN) — links to the same page in the other languages */
+import { useT, activeLangs, basePath, localePath, translations } from '../lib/i18n';
+
+interface Props {
+  /** "light" for light backgrounds (header), "dark" for dark backgrounds (footer) */
+  tone?: 'light' | 'dark';
+}
+const { tone = 'light' } = Astro.props;
+const { lang, t } = useT(Astro.url);
+const path = basePath(Astro.url);
+---
+
+{
+  activeLangs.length > 1 && (
+    <nav aria-label={t.languageLabel}>
+      <ul class:list={['flex w-fit items-center rounded-full p-0.5', tone === 'light' ? 'bg-sand' : 'bg-white/10']}>
+        {activeLangs.map((l) => (
+          <li>
+            <a
+              href={localePath(l, path)}
+              hreflang={l}
+              lang={l}
+              aria-current={l === lang ? 'page' : undefined}
+              class:list={[
+                'pressable grid h-10 min-w-11 place-items-center rounded-full px-2 text-sm font-extrabold',
+                l === lang
+                  ? tone === 'light'
+                    ? 'bg-brand text-white'
+                    : 'bg-white text-brand'
+                  : tone === 'light'
+                    ? 'text-brand hover:bg-line'
+                    : 'text-white/85 hover:bg-white/15',
+              ]}
+            >
+              {translations[l].meta.short}
+              <span class="sr-only"> — {translations[l].meta.label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}

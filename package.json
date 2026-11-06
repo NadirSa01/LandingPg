@@ -1,0 +1,32 @@
+{
+  "name": "sandal-landing",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "logo": "node scripts/make-logo.mjs",
+    "images": "node scripts/make-product-images.mjs"
+  },
+  "dependencies": {
+    "@fontsource/cairo": "^5.3.0",
+    "@lucide/astro": "^1.70.0",
+    "@tailwindcss/vite": "^4.3.5",
+    "alpinejs": "^3.17.5",
+    "astro": "7.3.8",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.5",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@types/alpinejs": "^3.17.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

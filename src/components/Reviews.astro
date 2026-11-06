@@ -1,0 +1,31 @@
+---
+/**
+ * Customer reviews — taken from site.reviews in src/config/product.ts.
+ * Only real reviews (real customers, their own words). The section is hidden while the list is empty.
+ */
+import MessageCircle from '@lucide/astro/icons/message-circle';
+import { site } from '../config/product';
+import { useT } from '../lib/i18n';
+
+const { t } = useT(Astro.url);
+---
+
+<section class="section bg-white" aria-labelledby="reviews-title">
+  <div class="container-page">
+    <h2 id="reviews-title" class="section-title">{t.reviewsTitle}</h2>
+
+    <ul class="mt-10 grid gap-4 md:grid-cols-3 lg:gap-6">
+      {
+        site.reviews.map((r) => (
+          <li class="flex flex-col gap-3 rounded-3xl border border-line bg-cream p-6 shadow-card">
+            <MessageCircle class="size-7 text-cork" aria-hidden="true" />
+            <p class="text-lg text-ink" dir="auto">{r.text}</p>
+            <p class="mt-auto font-bold text-brand" dir="auto">
+              {r.name}{r.city && ` — ${r.city}`}
+            </p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,24 @@
+---
+/** Last call to action before the footer */
+import { useT } from '../lib/i18n';
+import ProductImages from './ProductImages.astro';
+import PriceTag from './PriceTag.astro';
+
+const { t } = useT(Astro.url);
+---
+
+<section class="section" aria-labelledby="final-title">
+  <div class="container-page">
+    <div class="grid items-center gap-8 rounded-[2rem] bg-sand p-5 sm:p-10 md:grid-cols-2">
+      <div class="mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-soft md:max-w-none">
+        <ProductImages sizes="(min-width: 1280px) 560px, (min-width: 768px) 45vw, 384px" />
+      </div>
+      <div class="flex flex-col items-center gap-4 text-center md:items-start md:text-start">
+        <h2 id="final-title" class="text-[clamp(1.6rem,5vw,2.5rem)] leading-tight font-extrabold text-brand">{t.finalTitle}</h2>
+        <p class="text-lg text-muted">{t.productName}</p>
+        <PriceTag class="justify-center md:justify-start" />
+        <a href="#order" class="btn-primary w-full sm:w-auto sm:min-w-72">{t.orderNow}</a>
+      </div>
+    </div>
+  </div>
+</section>

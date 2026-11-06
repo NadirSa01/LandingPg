@@ -1,0 +1,28 @@
+---
+/**
+ * Fixed bottom bar (mobile & tablet only): price + "Order now".
+ * Hidden while the order form (or the hero button) is on screen ($store.ui.formVisible, see src/scripts/app.ts).
+ */
+import { product } from '../config/product';
+import { useT } from '../lib/i18n';
+
+const { t } = useT(Astro.url);
+---
+
+<div
+  x-data
+  x-show="!$store.ui.formVisible && !$store.ui.heroCtaVisible"
+  x-transition:enter="transition-[transform,opacity] duration-250 ease-out"
+  x-transition:enter-start="translate-y-full opacity-0 motion-reduce:translate-y-0"
+  x-transition:leave="transition-[transform,opacity] duration-150 ease-out"
+  x-transition:leave-end="translate-y-full opacity-0 motion-reduce:translate-y-0"
+  class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_20px_-8px_rgb(0_0_0/0.15)] backdrop-blur lg:hidden"
+>
+  <div class="container-page flex items-center justify-between gap-3 py-3">
+    <div class="leading-tight">
+      <p class="text-2xl font-extrabold whitespace-nowrap text-accent tabular-nums">{product.price} <span class="text-base">{t.currencyLabel}</span></p>
+      <del class="text-sm font-semibold text-muted">{product.oldPrice} {t.currencyLabel}</del>
+    </div>
+    <a href="#order" class="btn-primary min-h-12 flex-1 sm:max-w-xs">{t.orderNow}</a>
+  </div>
+</div>

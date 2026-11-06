@@ -1,0 +1,11 @@
+---
+/** Home page in the other languages — "/fr/", "/en/" (see site.languages in product.ts) */
+import HomePage from '../../views/HomePage.astro';
+import { prefixedLangs } from '../../lib/i18n';
+
+export function getStaticPaths() {
+  return prefixedLangs.map((lang) => ({ params: { lang } }));
+}
+---
+
+<HomePage />
