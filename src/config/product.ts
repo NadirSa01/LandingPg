@@ -24,7 +24,7 @@ export const site = {
   ga4Id: 'G-QXTY978E3G',
   // Pixel IDs (leave the [placeholder] to disable a pixel)
   metaPixelId: '[META_PIXEL_ID]',
-  tiktokPixelId: '[TIKTOK_PIXEL_ID]',
+  tiktokPixelId: 'DBNGBABC77U0V3P0S0MG',
   currency: 'MAD',
   ogImage: '/og-image.jpg', // file in /public (1200x630)
   /**
