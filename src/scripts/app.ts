@@ -17,7 +17,7 @@ import { product, site } from '../config/product';
 import type { Translation } from '../config/translations/ar';
 import { totalFor, savingFor } from '../lib/pricing';
 import { makeOrderSchema, validateOrder, type OrderInput } from '../lib/validation';
-import { track, trackWhatsAppClicks, type GaItem } from '../lib/tracking';
+import { track, trackWhatsAppClicks, identifyCustomer, type GaItem } from '../lib/tracking';
 import { whatsappLink, isPlaceholder } from '../lib/whatsapp';
 import { LAST_ORDER_KEY } from '../lib/constants';
 
@@ -273,6 +273,7 @@ Alpine.data('orderForm', () => ({
 
     try {
       await sendOrder(payload);
+      await identifyCustomer(data.phone);
       track('Lead', {
         value: total,
         currency: site.currency,

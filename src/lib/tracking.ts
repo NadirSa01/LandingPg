@@ -11,7 +11,11 @@
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void;
-    ttq?: { track: (event: string, data?: object, options?: object) => void; page: () => void };
+    ttq?: {
+      track: (event: string, data?: object, options?: object) => void;
+      page: () => void;
+      identify: (data: object) => void;
+    };
     gtag?: (...args: unknown[]) => void;
   }
 }
@@ -50,6 +54,23 @@ const gaName: Record<EventName, string[]> = {
 
 const sent = new Set<string>();
 
+/**
+ * TikTok advanced matching: gives TikTok the customer's phone, hashed (SHA-256) in the browser,
+ * so the order can be matched to the person who saw the ad. Call it before track('Lead').
+ * phone = Moroccan format 0XXXXXXXXX → sent as +212XXXXXXXXX (E.164), as TikTok asks.
+ */
+export async function identifyCustomer(phone: string) {
+  try {
+    if (!window.ttq || !window.crypto?.subtle) return;
+    const e164 = '+212' + phone.replace(/\D/g, '').replace(/^0/, '');
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(e164));
+    const hash = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    window.ttq.identify({ phone_number: hash });
+  } catch {
+    /* never break the page because of tracking */
+  }
+}
+
 export function track(event: EventName, data: TrackData = {}, once = false) {
   if (once && sent.has(event)) return;
   sent.add(event);
@@ -64,6 +85,7 @@ export function track(event: EventName, data: TrackData = {}, once = false) {
             content_type: 'product',
             contents: items.map((i) => ({
               content_id: i.item_id,
+              content_type: 'product',
               content_name: i.item_name,
               price: i.price,
               quantity: i.quantity,
