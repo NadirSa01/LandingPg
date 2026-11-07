@@ -23,7 +23,7 @@ export const site = {
   // Google Analytics 4 "Measurement ID" (starts with G-). Leave the [placeholder] to disable it.
   ga4Id: 'G-QXTY978E3G',
   // Pixel IDs (leave the [placeholder] to disable a pixel)
-  metaPixelId: '[META_PIXEL_ID]',
+  metaPixelId: '2136756943868626',
   tiktokPixelId: 'DBNGBABC77U0V3P0S0MG',
   currency: 'MAD',
   ogImage: '/og-image.jpg', // file in /public (1200x630)

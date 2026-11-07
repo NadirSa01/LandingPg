@@ -3,12 +3,16 @@
  * Each tool is skipped if it is not loaded (placeholder ID in product.ts / ad blocker).
  *
  *  Site event          Meta / TikTok                 Google Analytics 4
+ *  (Meta "Lead (order sent)" = Lead + Purchase, like TikTok PlaceAnOrder + Purchase)
  *  ViewContent         ViewContent / ViewContent     view_item
  *  AddToCart           AddToCart / AddToCart         add_to_cart   ("Order now" button clicked)
  *  InitiateCheckout    InitiateCheckout / same       begin_checkout
  *  Lead (order sent)   Lead / PlaceAnOrder+Purchase  generate_lead + purchase (cash on delivery order)
  *  Contact (WhatsApp)  Contact / Contact             contact
  */
+import { site } from '../config/product';
+import { isPlaceholder } from './whatsapp';
+
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void;
@@ -39,6 +43,14 @@ export type TrackData = {
   location?: string;
 };
 
+const metaName: Record<EventName, string[]> = {
+  ViewContent: ['ViewContent'],
+  AddToCart: ['AddToCart'],
+  InitiateCheckout: ['InitiateCheckout'],
+  Lead: ['Lead', 'Purchase'], // Purchase also counts orders later refused at delivery
+  Contact: ['Contact'],
+};
+
 const tiktokName: Record<EventName, string[]> = {
   ViewContent: ['ViewContent'],
   AddToCart: ['AddToCart'],
@@ -64,13 +76,19 @@ const sent = new Set<string>();
  * so the order can be matched to the person who saw the ad. Call it before track('Lead').
  * phone = Moroccan format 0XXXXXXXXX → sent as +212XXXXXXXXX (E.164), as TikTok asks.
  */
+async function sha256(text: string) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function identifyCustomer(phone: string) {
   try {
-    if (!window.ttq || !window.crypto?.subtle) return;
-    const e164 = '+212' + phone.replace(/\D/g, '').replace(/^0/, '');
-    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(e164));
-    const hash = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-    window.ttq.identify({ phone_number: hash });
+    if (!window.crypto?.subtle) return;
+    const local = phone.replace(/\D/g, '').replace(/^0/, ''); // 6XXXXXXXX
+    // TikTok: E.164 with "+" → +2126XXXXXXXX
+    if (window.ttq) window.ttq.identify({ phone_number: await sha256('+212' + local) });
+    // Meta: digits with country code, no "+" → 2126XXXXXXXX (re-init with user data = advanced matching)
+    if (window.fbq && !isPlaceholder(site.metaPixelId)) window.fbq('init', site.metaPixelId, { ph: await sha256('212' + local) });
   } catch {
     /* never break the page because of tracking */
   }
@@ -81,7 +99,21 @@ export function track(event: EventName, data: TrackData = {}, once = false) {
   sent.add(event);
   const { items, transaction_id, location, ...pixelData } = data;
   try {
-    window.fbq?.('track', event, pixelData);
+    if (window.fbq) {
+      // Meta wants content_ids + contents [{ id, quantity, item_price }]
+      const ids = items?.length ? items.map((i) => i.item_id) : ['strada-clogs'];
+      const fbData = {
+        ...pixelData,
+        content_type: 'product',
+        content_ids: ids,
+        ...(items?.length && {
+          contents: items.map((i) => ({ id: i.item_id, quantity: i.quantity, item_price: i.price })),
+        }),
+      };
+      for (const name of metaName[event]) {
+        window.fbq('track', name, fbData, transaction_id ? { eventID: `${transaction_id}-${name}` } : undefined);
+      }
+    }
     if (window.ttq) {
       // TikTok wants the products as "contents" (content_id / content_type)
       const ttData = items?.length
