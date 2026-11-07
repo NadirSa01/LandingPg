@@ -184,11 +184,11 @@ is for non-commercial sites only).
 1. The code is on GitHub (`git push`).
 2. https://dash.cloudflare.com → **Workers & Pages → Create → Import a repository** → pick the repo.
 3. Settings:
-   - Project name: **`strada`** (must match `name` in `wrangler.jsonc`)
+   - Project name: **`landingpg`** (must match `name` in `wrangler.jsonc`)
    - Build command: `npm run build`
    - Deploy command: `npx wrangler deploy` (reads `wrangler.jsonc`: serves the `dist` folder)
    - Advanced settings → build variable: `NODE_VERSION` = `22`
-4. **Deploy**. The site gets an address like `https://strada.<your-account>.workers.dev`.
+4. **Deploy**. The site gets an address like `https://landingpg.<your-account>.workers.dev`.
 5. Put that address (or your own domain) in `astro.config.mjs` → `site`, then push again
    (used for the canonical URL, the share image and the language links for Google).
 6. Own domain: in the Pages project → **Custom domains → Set up a custom domain**.
