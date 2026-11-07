@@ -3,6 +3,11 @@
 {
   "name": "landingpg", // = Worker name in the Cloudflare dashboard
   "compatibility_date": "2026-11-01",
+  // Own domain (DNS managed by Cloudflare): both addresses serve the site, with automatic HTTPS
+  "routes": [
+    { "pattern": "stradashop.store", "custom_domain": true },
+    { "pattern": "www.stradashop.store", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./dist",
     // unknown address → our 404 page (dist/404.html)

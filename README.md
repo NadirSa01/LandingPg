@@ -191,7 +191,8 @@ is for non-commercial sites only).
 4. **Deploy**. The site gets an address like `https://landingpg.<your-account>.workers.dev`.
 5. Put that address (or your own domain) in `astro.config.mjs` → `site`, then push again
    (used for the canonical URL, the share image and the language links for Google).
-6. Own domain: in the Pages project → **Custom domains → Set up a custom domain**.
+6. Own domain (stradashop.store): its DNS is on Cloudflare (Namecheap nameservers → `marge`/`martin.ns.cloudflare.com`).
+   `routes` in `wrangler.jsonc` connect `stradashop.store` and `www.stradashop.store` to the site on every deploy.
 
 Every `git push` redeploys the site automatically (about 1 minute).
 Cache and security headers: `public/_headers`.
