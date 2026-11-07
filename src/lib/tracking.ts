@@ -5,13 +5,13 @@
  *  Site event          Meta / TikTok                 Google Analytics 4
  *  ViewContent         ViewContent / ViewContent     view_item
  *  InitiateCheckout    InitiateCheckout / same       begin_checkout
- *  Lead (order sent)   Lead / SubmitForm             generate_lead + purchase (cash on delivery order)
+ *  Lead (order sent)   Lead / PlaceAnOrder           generate_lead + purchase (cash on delivery order)
  *  Contact (WhatsApp)  Contact / Contact             contact
  */
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void;
-    ttq?: { track: (event: string, data?: object) => void; page: () => void };
+    ttq?: { track: (event: string, data?: object, options?: object) => void; page: () => void };
     gtag?: (...args: unknown[]) => void;
   }
 }
@@ -37,7 +37,7 @@ export type TrackData = {
 const tiktokName: Record<EventName, string> = {
   ViewContent: 'ViewContent',
   InitiateCheckout: 'InitiateCheckout',
-  Lead: 'SubmitForm',
+  Lead: 'PlaceAnOrder', // cash-on-delivery order = TikTok "Place an Order"
   Contact: 'Contact',
 };
 
@@ -56,7 +56,22 @@ export function track(event: EventName, data: TrackData = {}, once = false) {
   const { items, transaction_id, location, ...pixelData } = data;
   try {
     window.fbq?.('track', event, pixelData);
-    window.ttq?.track(tiktokName[event], pixelData);
+    if (window.ttq) {
+      // TikTok wants the products as "contents" (content_id / content_type)
+      const ttData = items?.length
+        ? {
+            ...pixelData,
+            content_type: 'product',
+            contents: items.map((i) => ({
+              content_id: i.item_id,
+              content_name: i.item_name,
+              price: i.price,
+              quantity: i.quantity,
+            })),
+          }
+        : pixelData;
+      window.ttq.track(tiktokName[event], ttData, transaction_id ? { event_id: transaction_id } : undefined);
+    }
   } catch {
     /* never break the page because of tracking */
   }
