@@ -175,23 +175,26 @@ Events sent:
 
 Check them with the **Meta Pixel Helper** and **TikTok Pixel Helper** Chrome extensions.
 
-## 6. Put it online (GitHub + Netlify or Vercel)
+## 6. Put it online (GitHub + Cloudflare Pages)
 
-1. Create a GitHub repository, then in this folder:
-   ```bash
-   git init
-   git add .
-   git commit -m "Landing page"
-   git branch -M main
-   git remote add origin https://github.com/YOUR-USER/YOUR-REPO.git
-   git push -u origin main
-   ```
-2. **Netlify**: Add new site → Import from GitHub → pick the repo. Settings are read from `netlify.toml`
-   (build `npm run build`, publish `dist`). Click Deploy.
-   **or Vercel**: Add New → Project → import the repo. It detects Astro automatically. Click Deploy.
-3. Add your domain in the Netlify/Vercel settings, then put it in `astro.config.mjs` (`site`) and push again.
+Cloudflare Pages is free with **no traffic limit** for a static site like this one
+(Netlify's free plan pauses the site when its monthly credits run out; Vercel's free plan
+is for non-commercial sites only).
 
-Every `git push` redeploys the site automatically.
+1. The code is on GitHub (`git push`).
+2. https://dash.cloudflare.com → **Workers & Pages → Create → Pages → Connect to Git** → pick the repo.
+3. Build settings:
+   - Framework preset: **Astro**
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+   - Environment variable: `NODE_VERSION` = `22` (also set by `.nvmrc`)
+4. **Save and Deploy**. The site gets an address like `https://your-project.pages.dev`.
+5. Put that address (or your own domain) in `astro.config.mjs` → `site`, then push again
+   (used for the canonical URL, the share image and the language links for Google).
+6. Own domain: in the Pages project → **Custom domains → Set up a custom domain**.
+
+Every `git push` redeploys the site automatically (about 1 minute).
+Cache and security headers: `public/_headers`.
 
 ## 7. Test a full order before running ads
 

@@ -1,0 +1,11 @@
+# Cloudflare Pages headers (this file is copied as-is to the site root)
+
+# Optimized images / JS / CSS: cached 1 year (their file names change when they change)
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# All pages: basic security headers
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
