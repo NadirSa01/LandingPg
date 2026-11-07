@@ -4,8 +4,9 @@
  *
  *  Site event          Meta / TikTok                 Google Analytics 4
  *  ViewContent         ViewContent / ViewContent     view_item
+ *  AddToCart           AddToCart / AddToCart         add_to_cart   ("Order now" button clicked)
  *  InitiateCheckout    InitiateCheckout / same       begin_checkout
- *  Lead (order sent)   Lead / PlaceAnOrder           generate_lead + purchase (cash on delivery order)
+ *  Lead (order sent)   Lead / PlaceAnOrder+Purchase  generate_lead + purchase (cash on delivery order)
  *  Contact (WhatsApp)  Contact / Contact             contact
  */
 declare global {
@@ -20,7 +21,7 @@ declare global {
   }
 }
 
-export type EventName = 'ViewContent' | 'InitiateCheckout' | 'Lead' | 'Contact';
+export type EventName = 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'Lead' | 'Contact';
 
 /** One product line for Google Analytics (GA4 "items") */
 export type GaItem = { item_id: string; item_name: string; item_variant?: string; price: number; quantity: number };
@@ -38,15 +39,19 @@ export type TrackData = {
   location?: string;
 };
 
-const tiktokName: Record<EventName, string> = {
-  ViewContent: 'ViewContent',
-  InitiateCheckout: 'InitiateCheckout',
-  Lead: 'PlaceAnOrder', // cash-on-delivery order = TikTok "Place an Order"
-  Contact: 'Contact',
+const tiktokName: Record<EventName, string[]> = {
+  ViewContent: ['ViewContent'],
+  AddToCart: ['AddToCart'],
+  InitiateCheckout: ['InitiateCheckout'],
+  // cash-on-delivery order = TikTok "Place an Order"; "Purchase" too, because TikTok's
+  // e-commerce funnel requires it (note: it also counts orders later refused at delivery)
+  Lead: ['PlaceAnOrder', 'Purchase'],
+  Contact: ['Contact'],
 };
 
 const gaName: Record<EventName, string[]> = {
   ViewContent: ['view_item'],
+  AddToCart: ['add_to_cart'],
   InitiateCheckout: ['begin_checkout'],
   Lead: ['generate_lead', 'purchase'],
   Contact: ['contact'],
@@ -93,7 +98,9 @@ export function track(event: EventName, data: TrackData = {}, once = false) {
           }
         : // no products (ex: WhatsApp "Contact") → still give TikTok a content_id
           { ...pixelData, content_type: 'product', content_id: 'strada-clogs' };
-      window.ttq.track(tiktokName[event], ttData, transaction_id ? { event_id: transaction_id } : undefined);
+      for (const name of tiktokName[event]) {
+        window.ttq.track(name, ttData, transaction_id ? { event_id: `${transaction_id}-${name}` } : undefined);
+      }
     }
   } catch {
     /* never break the page because of tracking */

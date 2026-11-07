@@ -403,6 +403,18 @@ if (location.hash) {
 // WhatsApp button / link clicks → "Contact" event (pixels + Google Analytics)
 trackWhatsAppClicks();
 
+// "Order now" buttons (hero, offer, sticky bar, final CTA) → "AddToCart" (once): there is no cart,
+// clicking one of them is the step where the visitor decides to take the product
+document.addEventListener('click', (e) => {
+  if (!(e.target as Element | null)?.closest?.('a[href="#order"]')) return;
+  const color = (Alpine.store('shop') as { color: string } | undefined)?.color ?? product.colors[0].id;
+  track(
+    'AddToCart',
+    { content_name: pageData.productName, value: product.price, currency: site.currency, items: gaItems([{ color }], product.price) },
+    true,
+  );
+});
+
 // Pixel ViewContent when the gallery or the offer is seen (once)
 observe('#gallery, #offer', (visible) => {
   if (visible) {
