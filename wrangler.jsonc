@@ -1,0 +1,11 @@
+// Cloudflare (Workers static assets) — used by `npx wrangler deploy` after `npm run build`.
+// The site is 100% static: Cloudflare serves the files of ./dist, nothing runs on a server.
+{
+  "name": "strada",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // unknown address → our 404 page (dist/404.html)
+    "not_found_handling": "404-page"
+  }
+}
