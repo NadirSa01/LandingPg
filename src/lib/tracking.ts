@@ -91,7 +91,8 @@ export function track(event: EventName, data: TrackData = {}, once = false) {
               quantity: i.quantity,
             })),
           }
-        : pixelData;
+        : // no products (ex: WhatsApp "Contact") → still give TikTok a content_id
+          { ...pixelData, content_type: 'product', content_id: 'strada-clogs' };
       window.ttq.track(tiktokName[event], ttData, transaction_id ? { event_id: transaction_id } : undefined);
     }
   } catch {
