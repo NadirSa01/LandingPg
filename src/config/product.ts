@@ -16,7 +16,12 @@ export const site = {
   whatsapp: '212610056556',
   instagram: '[https://instagram.com/...]',
   // URL of your Google Apps Script web app (see README, step 4)
-  scriptUrl: '[GOOGLE_APPS_SCRIPT_WEB_APP_URL]',
+  scriptUrl: 'https://script.google.com/macros/s/AKfycbwzFVlWRfGdcjnuKkUXfdqjg764rg9rO_D9vGemCGz01AAgXjIDH0D2AADJSdsplKALrQ/exec',
+  // Language of the colors and cities written in the Google Sheet (same for every order,
+  // whatever language the customer used): 'ar', 'fr' or 'en'
+  sheetLang: 'fr' as 'ar' | 'fr' | 'en',
+  // Google Analytics 4 "Measurement ID" (starts with G-). Leave the [placeholder] to disable it.
+  ga4Id: 'G-QXTY978E3G',
   // Pixel IDs (leave the [placeholder] to disable a pixel)
   metaPixelId: '[META_PIXEL_ID]',
   tiktokPixelId: '[TIKTOK_PIXEL_ID]',

@@ -28,7 +28,8 @@ const alternates = activeLangs.map((l) => ({ lang: l, href: new URL(localePath(l
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImage = new URL(site.ogImage, Astro.site).href;
 
-// Pixels are only loaded when a real ID is set in product.ts
+// Pixels / Analytics are only loaded when a real ID is set in product.ts
+const ga4Id = isPlaceholder(site.ga4Id) ? null : site.ga4Id;
 const metaId = isPlaceholder(site.metaPixelId) ? null : site.metaPixelId;
 const tiktokId = isPlaceholder(site.tiktokPixelId) ? null : site.tiktokPixelId;
 ---
@@ -64,6 +65,27 @@ const tiktokId = isPlaceholder(site.tiktokPixelId) ? null : site.tiktokPixelId;
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
+
+    <!-- Google Analytics 4: the queue starts now (page_view + events are kept), the library loads
+         after the page has finished loading, so it never slows down the first display. -->
+    {
+      ga4Id && (
+        <script is:inline define:vars={{ ga4Id, lang }}>
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function () { dataLayer.push(arguments); };
+          gtag('js', new Date());
+          gtag('config', ga4Id, { page_language: lang });
+          var loadGa = function () {
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = 'https://www.googletagmanager.com/gtag/js?id=' + ga4Id;
+            document.head.appendChild(s);
+          };
+          if (document.readyState === 'complete') loadGa();
+          else addEventListener('load', loadGa, { once: true });
+        </script>
+      )
+    }
 
     <!-- Meta Pixel -->
     {

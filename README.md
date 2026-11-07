@@ -17,7 +17,7 @@ src/assets/products/       ← product photos (auto-optimized to AVIF/WebP)
 src/components/            ← one file per page section
 src/scripts/app.ts         ← interactivity (form, live total, sticky bar…)
 src/styles/global.css      ← brand colors & fonts (@theme)
-google-apps-script.gs      ← paste into Google Apps Script
+google-apps-script.gs      ← paste into Google Apps Script (then run "setup" once)
 ```
 
 ---
@@ -107,23 +107,30 @@ For the cleanest result, use a high-resolution PNG/JPG with the logo centered li
 
 ## 4. Google Sheet + Apps Script (receiving orders)
 
-1. Create a new Google Sheet (e.g. "Orders – Sandals").
+1. Create a new Google Sheet (e.g. "STRADA – Commandes").
 2. Menu **Extensions → Apps Script**. Delete the code you see, paste the whole content of
    `google-apps-script.gs`, and click **Save** 💾.
-3. Click **Deploy → New deployment** → the ⚙️ icon → **Web app**.
-   - Description: `orders`
+3. In the function menu next to ▷ **Run**, choose **`setup`**, then click ▷ **Run** (once).
+   Authorize access with your Google account
+   (if you see "Google hasn't verified this app": **Advanced → Go to … (unsafe)**; it's your own script).
+   This creates and formats the **Commandes** tab.
+4. Click **Deploy → New deployment** → the ⚙️ icon → **Web app**.
    - **Execute as: Me**
-   - **Who has access: Anyone**
-4. Click **Deploy**, then authorize access with your Google account
-   (if you see "Google hasn't verified this app": **Advanced → Go to … (unsafe)** — it's your own script).
-5. Copy the **Web app URL** (it ends with `/exec`) and paste it into `site.scriptUrl` in `product.ts`.
+   - **Who has access: Anyone** (customers don't sign in; the link can only *add* rows, not read them)
+5. Click **Deploy**, copy the **Web app URL** (it ends with `/exec`) and paste it into `site.scriptUrl` in `product.ts`.
 6. Test: open that URL in your browser. You should see `{"result":"ok",...}`.
 
-The "Orders" sheet and its header row are created automatically on the first order:
-`Date/time | Name | Phone | City | Address | Pairs | Number of pairs | Total (MAD) | Note | Language | Status`.
-**Language** = the version of the page the customer used (call them back in that language).
-Color names in "Pairs" are written in that language too (e.g. `Noir 42 | Beige 38`).
-Status starts as `جديد`. Change it by hand (e.g. confirmed / shipped / delivered / returned).
+The **Commandes** tab (in French, whatever language the customer used):
+`N° | Date | Nom | Téléphone | Ville | Adresse | Articles | Qté | Total (DH) | Note | Langue | Statut`
+
+- **N°**: `CMD-0001`, `CMD-0002`… (never reused).
+- **Téléphone**: click it to open a WhatsApp chat with the customer (to confirm the order).
+- **Ville / Articles**: always in French (`site.sheetLang` in `product.ts`), one pair per line (`Noir – 42`).
+  The address is kept as the customer typed it.
+- **Langue**: the version of the page the customer used (call them back in that language).
+- **Statut**: drop-down menu with colors: Nouveau → Injoignable / Reporté → Confirmé → Expédié → Livré → Payé (finished).
+  Other outcomes: Échange (size exchange), Retourné (refused / sent back), Annulé (cancelled before shipping).
+- Filters on the titles: sort or filter by status, city, date…
 
 ⚠️ If you change the script later: **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**.
 Otherwise the old version keeps running. The URL stays the same.
@@ -131,7 +138,26 @@ Otherwise the old version keeps running. The URL stays the same.
 **Ads tip:** link each ad to the right language: `https://your-domain.com/` (Arabic),
 `https://your-domain.com/fr/` (French) or `https://your-domain.com/en/` (English).
 
-## 5. Meta and TikTok Pixels
+## 5. Google Analytics 4, Meta and TikTok Pixels
+
+### Google Analytics 4
+1. https://analytics.google.com → **Admin** (⚙️) → **Create → Property** (time zone: Morocco, currency: MAD).
+2. **Data streams → Add stream → Web**: your site address, then **Create stream**.
+3. Copy the **Measurement ID** (`G-XXXXXXXXXX`) into `site.ga4Id` in `product.ts`.
+4. In **Admin → Events**, mark `generate_lead` (and `purchase`) as **Key events** (conversions).
+
+GA4 loads after the page has finished loading, so it doesn't slow down the site. Events sent:
+
+| When | GA4 event | Meta / TikTok |
+|---|---|---|
+| Gallery or offer seen | `view_item` | ViewContent |
+| Customer starts filling in the form | `begin_checkout` | InitiateCheckout |
+| Order sent | `generate_lead` + `purchase` (amount, colors, quantities) | Lead / SubmitForm |
+| WhatsApp link clicked | `contact` (`location`: floating_button, footer, order_form, page) | Contact |
+
+`purchase` = order **placed** (cash on delivery), not money received: compare with the **Payé** status in the sheet.
+
+### Meta and TikTok Pixels
 
 - Meta: Events Manager → Data sources → your Pixel → copy the **Pixel ID** (numbers only).
 - TikTok: Ads Manager → Tools → Events → Web events → your Pixel → copy the **Pixel ID**.
@@ -186,5 +212,5 @@ and that you deployed a **new version** after editing the script.
 - [ ] All `[placeholders]` replaced in `product.ts` **and** in the 3 translation files (product name, headline, benefits, FAQ…)
 - [ ] Real photos in `src/assets/products/` + `public/og-image.jpg`
 - [ ] Reviews: add **real** customer reviews to `reviews` in `product.ts` (the section stays hidden until you do)
-- [ ] `scriptUrl`, WhatsApp number, Pixel IDs, domain in `astro.config.mjs`
+- [ ] `scriptUrl`, WhatsApp number, GA4 ID, Pixel IDs, domain in `astro.config.mjs`
 - [ ] Full test order done (step 7)

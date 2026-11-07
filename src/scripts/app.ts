@@ -17,7 +17,7 @@ import { product, site } from '../config/product';
 import type { Translation } from '../config/translations/ar';
 import { totalFor, savingFor } from '../lib/pricing';
 import { makeOrderSchema, validateOrder, type OrderInput } from '../lib/validation';
-import { track } from '../lib/tracking';
+import { track, trackWhatsAppClicks, type GaItem } from '../lib/tracking';
 import { whatsappLink, isPlaceholder } from '../lib/whatsapp';
 import { LAST_ORDER_KEY } from '../lib/constants';
 
@@ -31,6 +31,7 @@ type PageData = {
   colorLabels: Record<string, string>;
   form: Translation['form'];
   errors: Translation['errors'];
+  sheet: { colors: Record<string, string>; cities: Record<string, string> };
 };
 const pageData: PageData = JSON.parse(document.getElementById('page-data')?.textContent || '{}');
 const f = pageData.form;
@@ -41,6 +42,20 @@ const schema = makeOrderSchema(pageData.errors);
 const fill = (text: string, vars: Record<string, string | number>) =>
   text.replace(/\{(\w+)\}/g, (match, key) => (key in vars ? String(vars[key]) : match));
 const colorName = (id: string) => pageData.colorLabels[id] ?? id;
+
+/** Google Analytics products: one entry per color (variant in the sheet language, same for every page) */
+const gaItems = (lines: { color: string }[], total: number): GaItem[] => {
+  const unit = Math.round((total / Math.max(lines.length, 1)) * 100) / 100; // bundle price spread over the pairs
+  const byColor = new Map<string, number>();
+  lines.forEach((l) => byColor.set(l.color, (byColor.get(l.color) ?? 0) + 1));
+  return [...byColor].map(([color, quantity]) => ({
+    item_id: `${site.brand.toLowerCase()}-clogs-${color}`,
+    item_name: pageData.productName,
+    item_variant: pageData.sheet.colors[color] ?? color,
+    price: unit,
+    quantity,
+  }));
+};
 
 const STORAGE_KEY = 'order-form-v1'; // localStorage (form draft)
 const firstColor = product.colors[0].id;
@@ -163,7 +178,7 @@ Alpine.data('orderForm', () => ({
     this.validate();
   },
   startCheckout() {
-    track('InitiateCheckout', { value: this.total, currency: site.currency }, true);
+    track('InitiateCheckout', { value: this.total, currency: site.currency, items: gaItems(this.lines, this.total) }, true);
   },
 
   /** Called after every change: re-validate + save draft */
@@ -245,9 +260,10 @@ Alpine.data('orderForm', () => ({
     const payload = {
       name: data.name,
       phone: data.phone, // normalized to 0XXXXXXXXX
-      city,
+      // Colors and cities in the Google Sheet's language (site.sheetLang), the same for every order
+      city: pageData.sheet.cities[city.trim()] ?? city,
       address: data.address,
-      pairs: items.map((i) => `${i.color} ${i.size}`).join(' | '),
+      pairs: data.lines.map((l) => `${pageData.sheet.colors[l.color] ?? l.color} – ${l.size}`).join('\n'), // one pair per line in the cell
       pairsCount: items.length,
       total,
       note: data.note,
@@ -257,7 +273,14 @@ Alpine.data('orderForm', () => ({
 
     try {
       await sendOrder(payload);
-      track('Lead', { value: total, currency: site.currency, content_name: pageData.productName, num_items: items.length });
+      track('Lead', {
+        value: total,
+        currency: site.currency,
+        content_name: pageData.productName,
+        num_items: items.length,
+        items: gaItems(data.lines, total),
+        transaction_id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      });
       try {
         sessionStorage.setItem(
           LAST_ORDER_KEY,
@@ -376,12 +399,20 @@ if (location.hash) {
   else addEventListener('load', () => setTimeout(clean, 0), { once: true });
 }
 
+// WhatsApp button / link clicks → "Contact" event (pixels + Google Analytics)
+trackWhatsAppClicks();
+
 // Pixel ViewContent when the gallery or the offer is seen (once)
 observe('#gallery, #offer', (visible) => {
   if (visible) {
     track(
       'ViewContent',
-      { content_name: pageData.productName, value: product.price, currency: site.currency, content_type: 'product' },
+      {
+        content_name: pageData.productName,
+        value: product.price,
+        currency: site.currency,
+        items: gaItems([{ color: Alpine.store('shop') ? (Alpine.store('shop') as { color: string }).color : product.colors[0].id }], product.price),
+      },
       true,
     );
   }

@@ -10,7 +10,8 @@ import Ruler from '@lucide/astro/icons/ruler';
 import LoaderCircle from '@lucide/astro/icons/loader-circle';
 import Banknote from '@lucide/astro/icons/banknote';
 import { product } from '../config/product';
-import { useT, colorLabel, localePath } from '../lib/i18n';
+import { useT, colorLabel, localePath, translations } from '../lib/i18n';
+import { site } from '../config/product';
 import ProductImages from './ProductImages.astro';
 import PriceTag from './PriceTag.astro';
 import WhatsAppIcon from './WhatsAppIcon.astro';
@@ -29,6 +30,15 @@ const pageData = {
   colorLabels: Object.fromEntries(product.colors.map((c) => [c.id, colorLabel(c, lang)])),
   form: f,
   errors: t.errors,
+  // Google Sheet: colors and cities always in the same language (site.sheetLang)
+  sheet: {
+    colors: Object.fromEntries(product.colors.map((c) => [c.id, colorLabel(c, site.sheetLang)])),
+    // the city lists have the same order in every language → this page's name → sheet name
+    cities: Object.fromEntries([
+      ...t.cities.map((c, i) => [c, translations[site.sheetLang].cities[i] ?? c]),
+      [t.otherCity, translations[site.sheetLang].otherCity],
+    ]),
+  },
 };
 // "<" escaped so the JSON can never close the <script> tag
 const pageDataJson = JSON.stringify(pageData).replace(/</g, '\\u003c');
